@@ -1,0 +1,61 @@
+[
+  {
+    "churn_loc_estimate": 597345,
+    "counts": {
+      "assets_added": 438,
+      "assets_modified": 0,
+      "assets_removed": 0,
+      "files_added": 843,
+      "files_modified": 0,
+      "files_removed": 0,
+      "folders_added": 248,
+      "folders_modified": 0,
+      "folders_removed": 0
+    },
+    "event_id": "2026-01-07T08:09:44Z",
+    "languages": [
+      {
+        "delta_bytes": 37398,
+        "estimated_loc_delta": 748,
+        "language": "CSS"
+      },
+      {
+        "delta_bytes": 686177,
+        "estimated_loc_delta": 13724,
+        "language": "HTML"
+      },
+      {
+        "delta_bytes": 19337435,
+        "estimated_loc_delta": 508880,
+        "language": "JavaScript"
+      },
+      {
+        "delta_bytes": 2308212,
+        "estimated_loc_delta": 67889,
+        "language": "Python"
+      },
+      {
+        "delta_bytes": 25302,
+        "estimated_loc_delta": 843,
+        "language": "Shell"
+      },
+      {
+        "delta_bytes": 5562,
+        "estimated_loc_delta": 146,
+        "language": "SQL"
+      },
+      {
+        "delta_bytes": 194365,
+        "estimated_loc_delta": 5115,
+        "language": "TypeScript"
+      }
+    ],
+    "net_loc_estimate": 597345,
+    "schema_version": 1,
+    "total_delta_bytes": 185726213,
+    "unknown_delta_bytes": 163131762,
+    "watch_folders": [
+      "coding"
+    ]
+  }
+]
