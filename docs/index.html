@@ -492,6 +492,7 @@
         ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
         let drawn = 0;
         let skipped = 0;
+        let badX = 0, badY = 0, badR = 0;
         ctx.restore();
 
         // Links
@@ -519,11 +520,17 @@
         const drawOrder = [...nodes].sort((a,b) => (a.z - b.z) || (a.r - b.r));
         for (const n of drawOrder) {
           const p = nodeScreenPos(n);
-          if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(n.r)) {
+          const px = Number(p.x);
+          const py = Number(p.y);
+          const nr = Number(n.r);
+          if (!Number.isFinite(px)) badX += 1;
+          if (!Number.isFinite(py)) badY += 1;
+          if (!Number.isFinite(nr)) badR += 1;
+          if (!Number.isFinite(px) || !Number.isFinite(py) || !Number.isFinite(nr)) {
             skipped += 1;
             continue;
           }
-          const rr = clamp(n.r, 2, 140);
+          const rr = clamp(nr, 2, 140);
 
           // Hover detection (screen coords)
           const dx = mx - p.x;
@@ -536,7 +543,8 @@
           ctx.globalAlpha = 0.92;
           ctx.fillStyle = n.color || '#7cf2c5';
           ctx.beginPath();
-          ctx.arc(p.x, p.y, rr, 0, Math.PI * 2);
+          ctx.arc(px, py, rr, 0, Math.PI * 2);
+          ctx.arc(px, py, rr, 0, Math.PI * 2);
           ctx.fill();
           ctx.globalAlpha = 0.55;
           ctx.strokeStyle = '#e7e9ee';
@@ -551,7 +559,11 @@
         ctx.globalAlpha = 1.0;
         ctx.fillStyle = '#ffffff';
         ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-        ctx.fillText(`draw() nodes=${nodes.length} drawn=${drawn} skipped=${skipped} canvas=${w}x${h}`, 34, 94);
+        ctx.fillText(
+          `draw() nodes=${nodes.length} drawn=${drawn} skipped=${skipped} badX=${badX} badY=${badY} badR=${badR} canvas=${w}x${h}`,
+          34,
+          94
+        );
         ctx.restore();
 
         // Tooltip
