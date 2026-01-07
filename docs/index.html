@@ -478,15 +478,15 @@
         }
         ctx.restore();
 
-        // Debug beacon: should always be visible (helps confirm the canvas is rendering).
+        // Debug beacon: draw it BELOW the sticky header so it's actually visible.
         ctx.save();
         ctx.globalAlpha = 1.0;
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(16, 16, 6, 0, Math.PI * 2);
+        ctx.arc(20, 90, 6, 0, Math.PI * 2);
         ctx.fill();
         ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-        ctx.fillText('draw()', 28, 20);
+        ctx.fillText(`draw() nodes=${nodes.length} canvas=${w}x${h}`, 34, 94);
         ctx.restore();
 
         // Links
@@ -508,7 +508,7 @@
         }
         ctx.restore();
 
-        // Nodes
+        // Nodes (high-contrast fallback so bubbles are unmistakable)
         hovered = null;
         const mx = mouse.x, my = mouse.y;
         const drawOrder = [...nodes].sort((a,b) => (a.z - b.z) || (a.r - b.r));
@@ -526,53 +526,17 @@
             hovered = n;
           }
 
-          // Glow
-          try {
-            ctx.save();
-            const g = ctx.createRadialGradient(
-              p.x, p.y,
-              Math.max(1, rr * 0.2),
-              p.x, p.y,
-              Math.max(1, rr * 2.2)
-            );
-            g.addColorStop(0, n.color || '#7cf2c5');
-            g.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.globalAlpha = 0.12 + clamp(n.z, 0.25, 1.0) * 0.12;
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, rr * 2.2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-          } catch (e) {
-            // Never let a single bad node crash the whole frame.
-            try { ctx.restore(); } catch (_) {}
-          }
-
-          // Core
-          try {
-            ctx.save();
-            const gg = ctx.createRadialGradient(
-              p.x - rr*0.25, p.y - rr*0.25,
-              1,
-              p.x, p.y,
-              Math.max(1, rr)
-            );
-            gg.addColorStop(0, 'rgba(255,255,255,0.35)');
-            gg.addColorStop(0.22, n.color || '#7cf2c5');
-            gg.addColorStop(1, 'rgba(0,0,0,0.35)');
-            ctx.fillStyle = gg;
-            ctx.globalAlpha = 0.95;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, rr, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 0.35;
-            ctx.strokeStyle = '#e7e9ee';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            ctx.restore();
-          } catch (e) {
-            try { ctx.restore(); } catch (_) {}
-          }
+          ctx.save();
+          ctx.globalAlpha = 0.92;
+          ctx.fillStyle = n.color || '#7cf2c5';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, rr, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.55;
+          ctx.strokeStyle = '#e7e9ee';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
         }
 
         // Tooltip
