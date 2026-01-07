@@ -317,6 +317,10 @@
             // Position event in circular orbit around project core
             const evX = pNode.x + Math.cos(theta + j*0.5) * eventOrbitRadius;
             const evY = pNode.y + Math.sin(theta + j*0.5) * eventOrbitRadius;
+            // Debug: log first 3 event positions
+            if (idx < 3) {
+              console.log(`Event ${idx}: theta=${theta.toFixed(3)}, cos=${Math.cos(theta).toFixed(3)}, sin=${Math.sin(theta).toFixed(3)}, pNode.x=${Math.round(pNode.x)}, pNode.y=${Math.round(pNode.y)}, evX=${Math.round(evX)}, evY=${Math.round(evY)}`);
+            }
             const ev = addNode({
               id: eventId,
               type: 'event',
