@@ -96,13 +96,6 @@
           <div class="sub">Project systems (metadata only, no file content reads)</div>
         </div>
         <div class="controls">
-          <label class="sub">Bubble size:
-            <select id="metric">
-              <option value="net_loc_estimate">Estimated net LOC</option>
-              <option value="churn_loc_estimate">Estimated churn LOC</option>
-              <option value="total_delta_bytes">Delta bytes</option>
-            </select>
-          </label>
           <button id="reload">Reload</button>
           <div class="pill" id="count"></div>
         </div>
@@ -124,8 +117,8 @@
       const canvas = document.getElementById('c');
       const ctx = canvas.getContext('2d');
       const tooltip = document.getElementById('tooltip');
-      const metricSelect = document.getElementById('metric');
       const countEl = document.getElementById('count');
+      const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
 
       function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
       function lerp(a, b, t) { return a + (b - a) * t; }
@@ -180,12 +173,22 @@
       let lastT = performance.now();
       let mouse = { x: 0, y: 0, down: false };
       let hovered = null;
+      let DPR = 1;
+      let CSS_W = 0;
+      let CSS_H = 0;
 
       function resize() {
         const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
         const rect = canvas.getBoundingClientRect();
-        canvas.width = Math.floor(rect.width * dpr);
-        canvas.height = Math.floor(rect.height * dpr);
+        const cssW = Math.max(1, Math.floor(rect.width || window.innerWidth || 1));
+        const cssH = Math.max(1, Math.floor(rect.height || window.innerHeight || 1));
+        const w = Math.max(1, Math.floor(cssW * dpr));
+        const h = Math.max(1, Math.floor(cssH * dpr));
+        DPR = dpr;
+        CSS_W = cssW;
+        CSS_H = cssH;
+        canvas.width = w;
+        canvas.height = h;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
@@ -194,7 +197,8 @@
       }
 
       function ensureStars() {
-        const w = canvas.clientWidth, h = canvas.clientHeight;
+        const w = CSS_W || canvas.clientWidth || 1;
+        const h = CSS_H || canvas.clientHeight || 1;
         const target = Math.floor((w*h) / 18000);
         if (stars.length >= target) return;
         for (let i=stars.length; i<target; i++) {
@@ -232,7 +236,8 @@
         }
 
         const projects = [...projectLabels.entries()];
-        const w = canvas.clientWidth, h = canvas.clientHeight;
+        const w = CSS_W || canvas.clientWidth || 1;
+        const h = CSS_H || canvas.clientHeight || 1;
         const baseX = w * 0.5;
         const spread = Math.min(520, w * 0.7);
         projects.forEach(([label, id], idx) => {
@@ -263,7 +268,7 @@
         const worldHeight = clamp(days * 520, 900, 8000);
         document.body.style.height = `${Math.max(window.innerHeight, worldHeight + 120)}px`;
 
-        const metric = metricSelect.value;
+        const metric = METRIC;
         let maxAbs = 1;
         for (const e of events) {
           maxAbs = Math.max(maxAbs, Math.abs(num(e?.[metric], 0)));
@@ -362,7 +367,8 @@
       }
 
       function applyPhysics(dt) {
-        const w = canvas.clientWidth, h = canvas.clientHeight;
+        const w = CSS_W || canvas.clientWidth || 1;
+        const h = CSS_H || canvas.clientHeight || 1;
         const centerX = w * 0.5;
 
         // Mild global forces + noise
@@ -439,7 +445,8 @@
       }
 
       function draw() {
-        const w = canvas.clientWidth, h = canvas.clientHeight;
+        const w = CSS_W || canvas.clientWidth || 1;
+        const h = CSS_H || canvas.clientHeight || 1;
         ctx.clearRect(0, 0, w, h);
 
         // Background stars (parallax)
@@ -486,52 +493,62 @@
           if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(n.r)) {
             continue;
           }
+          const rr = clamp(n.r, 2, 140);
 
           // Hover detection (screen coords)
           const dx = mx - p.x;
           const dy = my - p.y;
-          if ((dx*dx + dy*dy) <= (n.r*n.r)) {
+          if ((dx*dx + dy*dy) <= (rr*rr)) {
             hovered = n;
           }
 
           // Glow
-          ctx.save();
-          const g = ctx.createRadialGradient(
-            p.x, p.y,
-            Math.max(1, n.r * 0.2),
-            p.x, p.y,
-            Math.max(1, n.r * 2.2)
-          );
-          g.addColorStop(0, n.color);
-          g.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.globalAlpha = 0.12 + n.z * 0.12;
-          ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, n.r * 2.2, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
+          try {
+            ctx.save();
+            const g = ctx.createRadialGradient(
+              p.x, p.y,
+              Math.max(1, rr * 0.2),
+              p.x, p.y,
+              Math.max(1, rr * 2.2)
+            );
+            g.addColorStop(0, n.color || '#7cf2c5');
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.globalAlpha = 0.12 + clamp(n.z, 0.25, 1.0) * 0.12;
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, rr * 2.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          } catch (e) {
+            // Never let a single bad node crash the whole frame.
+            try { ctx.restore(); } catch (_) {}
+          }
 
           // Core
-          ctx.save();
-          const gg = ctx.createRadialGradient(
-            p.x - n.r*0.25, p.y - n.r*0.25,
-            1,
-            p.x, p.y,
-            Math.max(1, n.r)
-          );
-          gg.addColorStop(0, 'rgba(255,255,255,0.35)');
-          gg.addColorStop(0.22, n.color);
-          gg.addColorStop(1, 'rgba(0,0,0,0.35)');
-          ctx.fillStyle = gg;
-          ctx.globalAlpha = 0.95;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, n.r, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalAlpha = 0.35;
-          ctx.strokeStyle = '#e7e9ee';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-          ctx.restore();
+          try {
+            ctx.save();
+            const gg = ctx.createRadialGradient(
+              p.x - rr*0.25, p.y - rr*0.25,
+              1,
+              p.x, p.y,
+              Math.max(1, rr)
+            );
+            gg.addColorStop(0, 'rgba(255,255,255,0.35)');
+            gg.addColorStop(0.22, n.color || '#7cf2c5');
+            gg.addColorStop(1, 'rgba(0,0,0,0.35)');
+            ctx.fillStyle = gg;
+            ctx.globalAlpha = 0.95;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, rr, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 0.35;
+            ctx.strokeStyle = '#e7e9ee';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+          } catch (e) {
+            try { ctx.restore(); } catch (_) {}
+          }
         }
 
         // Tooltip
@@ -575,6 +592,9 @@
 
       async function main() {
         try {
+          // Ensure canvas size is correct before building/laying out nodes.
+          resize();
+          ensureStars();
           const events = await loadEvents();
           buildScene(events);
         } catch (e) {
@@ -585,7 +605,6 @@
       function wire() {
         window.addEventListener('resize', () => { resize(); ensureStars(); });
         document.getElementById('reload').addEventListener('click', main);
-        metricSelect.addEventListener('change', main);
         window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
         window.addEventListener('scroll', () => { /* parallax uses scrollY() */ });
       }
