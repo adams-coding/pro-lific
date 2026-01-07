@@ -210,8 +210,8 @@
       }
 
       function ensureStars() {
-        const w = CSS_W || canvas.clientWidth || 1;
-        const h = CSS_H || canvas.clientHeight || 1;
+        const w = CSS_W || window.innerWidth || canvas.clientWidth || 1;
+        const h = CSS_H || window.innerHeight || canvas.clientHeight || 1;
         const target = Math.floor((w*h) / 18000);
         if (stars.length >= target) return;
         for (let i=stars.length; i<target; i++) {
@@ -249,8 +249,8 @@
         }
 
         const projects = [...projectLabels.entries()];
-        const w = CSS_W || canvas.clientWidth || 1;
-        const h = CSS_H || canvas.clientHeight || 1;
+        const w = CSS_W || window.innerWidth || canvas.clientWidth || 1;
+        const h = CSS_H || window.innerHeight || canvas.clientHeight || 1;
         const baseX = w * 0.5;
         const spread = Math.min(520, w * 0.7);
         projects.forEach(([label, id], idx) => {
@@ -380,8 +380,8 @@
       }
 
       function applyPhysics(dt) {
-        const w = CSS_W || canvas.clientWidth || 1;
-        const h = CSS_H || canvas.clientHeight || 1;
+        const w = CSS_W || window.innerWidth || canvas.clientWidth || 1;
+        const h = CSS_H || window.innerHeight || canvas.clientHeight || 1;
         const centerX = w * 0.5;
 
         // Mild global forces + noise
@@ -450,10 +450,12 @@
         // Parallax: deeper nodes move slower with scroll.
         const sy = scrollY();
         const par = clamp(num(n.z, 1.0), 0.25, 1.0);
+        // FORCE finite, guaranteed coordinates by using num() with safe fallbacks.
+        const rawX = num(n.x, window.innerWidth * 0.5);
+        const rawY = num(n.y, window.innerHeight * 0.5);
         return {
-          x: n.x,
-          // Convert world y to screen y, then apply mild parallax.
-          y: (n.y - sy) + (sy * (1 - par) * 0.25),
+          x: rawX,
+          y: (rawY - sy) + (sy * (1 - par) * 0.25),
         };
       }
 
@@ -520,9 +522,11 @@
         const drawOrder = [...nodes].sort((a,b) => (a.z - b.z) || (a.r - b.r));
         for (const n of drawOrder) {
           const p = nodeScreenPos(n);
-          const px = Number(p.x);
-          const py = Number(p.y);
-          const nr = Number(n.r);
+          // Use num() to guarantee finite fallbacks (screen center if coord is missing/invalid).
+          const px = num(p.x, w * 0.5);
+          const py = num(p.y, h * 0.5);
+          const nr = num(n.r, 20);
+          // These should NEVER fail now, but keep diagnostics just in case.
           if (!Number.isFinite(px)) badX += 1;
           if (!Number.isFinite(py)) badY += 1;
           if (!Number.isFinite(nr)) badR += 1;
