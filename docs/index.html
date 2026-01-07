@@ -255,68 +255,70 @@
         const spread = Math.min(520, w * 0.7);
         projects.forEach(([label, id], idx) => {
           const t = projects.length <= 1 ? 0.5 : idx / (projects.length - 1);
+          // Position projects down the page (one per ~800px of vertical space)
+          const projectY = 500 + (idx * 1200);
           nodes.push({
             id,
             type: 'project',
             label,
-            x: baseX + (t - 0.5) * spread,
-            y: 220, // Fixed Y near top of page (below header)
-            z: 0.5, // Mid-depth for project cores
+            x: baseX,
+            y: projectY,
+            z: 0.5,
             vx: 0, vy: 0,
-            r: 50, // Slightly larger project cores
+            r: 60,
             color: '#7cf2c5',
-            meta: {},
-            locked: true, // Lock projects so they stay put
+            meta: { projectY }, // store for event positioning
+            locked: true,
           });
         });
 
-        // Vertical "scroll depth" mapping (events down the page)
-        const times = events.map(e => parseEventTime(e).getTime());
-        const tMin = Math.min(...times, Date.now());
-        const tMax = Math.max(...times, Date.now());
-        const span = Math.max(1, tMax - tMin);
-
-        // Make page scrollable proportional to history length.
-        // Use index-based spacing as minimum to ensure visual separation even if all events are same-day.
-        const days = Math.max(1, Math.ceil(span / (24*3600*1000)));
-        const minWorldHeight = 400 + (events.length * 180); // 180px per event minimum
-        const timeBasedHeight = days * 520;
-        const worldHeight = clamp(Math.max(minWorldHeight, timeBasedHeight), 900, 12000);
-        document.body.style.height = `${Math.max(window.innerHeight, worldHeight + 200)}px`;
-
+        // Group events by project, then position in circular orbits
         const metric = METRIC;
         let maxAbs = 1;
         for (const e of events) {
           maxAbs = Math.max(maxAbs, Math.abs(num(e?.[metric], 0)));
         }
 
+        // Group events by their watch folders
+        const eventsByProject = new Map();
+        for (const e of events) {
+          const wfs = Array.isArray(e.watch_folders) && e.watch_folders.length ? e.watch_folders : ['project'];
+          for (const wf of wfs) {
+            const key = String(wf);
+            if (!eventsByProject.has(key)) eventsByProject.set(key, []);
+            eventsByProject.get(key).push(e);
+          }
+        }
+
+        // Calculate page height based on number of projects
+        const worldHeight = 400 + (projects.length * 1200);
+        document.body.style.height = `${Math.max(window.innerHeight, worldHeight + 200)}px`;
+
         function addNode(n) { nodes.push(n); return n; }
         function addLink(a, b, rest, k) { links.push({ a, b, rest, k }); }
         function getNode(id) { return nodes.find(n => n.id === id); }
 
-        // Event + satellites
+        // Position events in circular orbits around their project cores
+        let globalEventIdx = 0;
         events.forEach((e, idx) => {
           const metricVal = num(e?.[metric], 0);
           const vAbs = Math.abs(metricVal);
-          const tNorm = (parseEventTime(e).getTime() - tMin) / span;
-          // Mix time-based and index-based Y positioning for better visual separation.
-          const timeY = lerp(400, worldHeight - 200, tNorm);
-          const indexY = 400 + (idx * 180);
-          const y = Math.max(timeY, indexY); // Use whichever gives more vertical spread
-          const orbit = lerp(90, 170, Math.random());
-          const theta = (idx * 1.7) % (Math.PI * 2);
+          
+          // Orbit parameters: events spread around project in a circle
+          const eventOrbitRadius = lerp(200, 320, Math.random());
+          const theta = (idx * 0.8 + Math.random() * 0.3) * (Math.PI * 2 / Math.max(events.length, 1));
 
           const watchFolders = Array.isArray(e.watch_folders) && e.watch_folders.length ? e.watch_folders : ['project'];
-          // Attach to first project label (simple). If multiple, we "fan" by small offsets.
           watchFolders.forEach((wf, j) => {
             const projectId = projectLabels.get(String(wf)) || `p:${String(wf)}`;
             const pNode = getNode(projectId) || getNode('p:project');
             if (!pNode) return;
 
             const eventId = `e:${e.event_id}:${j}`;
-            const r = 10 + Math.sqrt(vAbs / maxAbs) * 24;
-            const evX = pNode.x + Math.cos(theta + j*0.6) * orbit;
-            const evY = y;
+            const r = 12 + Math.sqrt(vAbs / maxAbs) * 28;
+            // Position event in circular orbit around project core
+            const evX = pNode.x + Math.cos(theta + j*0.5) * eventOrbitRadius;
+            const evY = pNode.y + Math.sin(theta + j*0.5) * eventOrbitRadius;
             const ev = addNode({
               id: eventId,
               type: 'event',
@@ -330,11 +332,8 @@
               meta: { event: e },
               locked: false,
             });
-            // Use actual distance as rest length so spring doesn't fight the vertical layout
-            const dx = evX - pNode.x;
-            const dy = evY - pNode.y;
-            const actualDist = Math.sqrt(dx*dx + dy*dy);
-            addLink(pNode.id, ev.id, actualDist, 0.008);
+            // Link with correct rest distance (since we use cos/sin for both X and Y, distance = radius)
+            addLink(pNode.id, ev.id, eventOrbitRadius, 0.012);
 
             // Satellites by language (top 4 by abs delta bytes)
             const langs = Array.isArray(e.languages) ? e.languages : [];
