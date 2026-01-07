@@ -254,9 +254,8 @@
         const baseX = w * 0.5;
         const spread = Math.min(520, w * 0.7);
         projects.forEach(([label, id], idx) => {
-          const t = projects.length <= 1 ? 0.5 : idx / (projects.length - 1);
-          // Position projects down the page (one per ~800px of vertical space)
-          const projectY = 500 + (idx * 1200);
+          // Position project at viewport center for first one, then down the page for additional projects
+          const projectY = h * 0.5 + (idx * 1200);
           nodes.push({
             id,
             type: 'project',
@@ -267,7 +266,7 @@
             vx: 0, vy: 0,
             r: 60,
             color: '#7cf2c5',
-            meta: { projectY }, // store for event positioning
+            meta: { projectY },
             locked: true,
           });
         });
@@ -514,11 +513,17 @@
         ctx.globalAlpha = 1.0;
         ctx.fillStyle = '#ffffff';
         ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-        ctx.fillText(
-          `draw() nodes=${nodes.length} drawn=${drawn} skipped=${skipped} badX=${badX} badY=${badY} badR=${badR} canvas=${w}x${h}`,
-          34,
-          94
-        );
+        // Debug: show first 3 node positions
+        let dbg = `draw() nodes=${nodes.length} drawn=${drawn} skipped=${skipped} canvas=${w}x${h}`;
+        if (nodes.length > 0) {
+          const n0 = nodes[0];
+          dbg += ` | node[0]: type=${n0.type} x=${Math.round(n0.x)} y=${Math.round(n0.y)}`;
+        }
+        if (nodes.length > 1) {
+          const n1 = nodes[1];
+          dbg += ` | [1]: type=${n1.type} x=${Math.round(n1.x)} y=${Math.round(n1.y)}`;
+        }
+        ctx.fillText(dbg, 34, 94);
         ctx.restore();
 
         // Tooltip
