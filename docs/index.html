@@ -129,7 +129,11 @@
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
       if (verEl) verEl.textContent = 'viz v3';
 
-      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+      function clamp(v, lo, hi) {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return lo;
+        return Math.max(lo, Math.min(hi, n));
+      }
       function lerp(a, b, t) { return a + (b - a) * t; }
 
       function parseEventTime(e) {
@@ -445,7 +449,7 @@
       function nodeScreenPos(n) {
         // Parallax: deeper nodes move slower with scroll.
         const sy = scrollY();
-        const par = clamp(n.z, 0.25, 1.0);
+        const par = clamp(num(n.z, 1.0), 0.25, 1.0);
         return {
           x: n.x,
           // Convert world y to screen y, then apply mild parallax.
@@ -486,7 +490,8 @@
         ctx.arc(20, 90, 6, 0, Math.PI * 2);
         ctx.fill();
         ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-        ctx.fillText(`draw() nodes=${nodes.length} canvas=${w}x${h}`, 34, 94);
+        let drawn = 0;
+        let skipped = 0;
         ctx.restore();
 
         // Links
@@ -515,6 +520,7 @@
         for (const n of drawOrder) {
           const p = nodeScreenPos(n);
           if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(n.r)) {
+            skipped += 1;
             continue;
           }
           const rr = clamp(n.r, 2, 140);
@@ -537,7 +543,16 @@
           ctx.lineWidth = 1;
           ctx.stroke();
           ctx.restore();
+          drawn += 1;
         }
+
+        // Debug text after drawing attempt
+        ctx.save();
+        ctx.globalAlpha = 1.0;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+        ctx.fillText(`draw() nodes=${nodes.length} drawn=${drawn} skipped=${skipped} canvas=${w}x${h}`, 34, 94);
+        ctx.restore();
 
         // Tooltip
         if (hovered) {
