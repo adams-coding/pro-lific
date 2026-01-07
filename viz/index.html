@@ -303,7 +303,10 @@
           const vAbs = Math.abs(metricVal);
           
           // Orbit parameters: distribute events evenly around the circle
-          const eventOrbitRadius = 280; // Fixed radius for clean circular layout
+          // Scale radius based on number of events to prevent overlap
+          const baseRadius = 350;
+          const radiusScale = Math.max(1, events.length / 15);
+          const eventOrbitRadius = baseRadius * radiusScale;
           const theta = (idx / Math.max(events.length, 1)) * Math.PI * 2;
 
           const watchFolders = Array.isArray(e.watch_folders) && e.watch_folders.length ? e.watch_folders : ['project'];
@@ -317,10 +320,6 @@
             // Position event in circular orbit around project core
             const evX = pNode.x + Math.cos(theta + j*0.5) * eventOrbitRadius;
             const evY = pNode.y + Math.sin(theta + j*0.5) * eventOrbitRadius;
-            // Debug: log first 3 event positions
-            if (idx < 3) {
-              console.log(`Event ${idx}: theta=${theta.toFixed(3)}, cos=${Math.cos(theta).toFixed(3)}, sin=${Math.sin(theta).toFixed(3)}, pNode.x=${Math.round(pNode.x)}, pNode.y=${Math.round(pNode.y)}, evX=${Math.round(evX)}, evY=${Math.round(evY)}`);
-            }
             const ev = addNode({
               id: eventId,
               type: 'event',
@@ -517,17 +516,11 @@
         ctx.globalAlpha = 1.0;
         ctx.fillStyle = '#ffffff';
         ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-        // Debug: show first 3 node positions
-        let dbg = `draw() nodes=${nodes.length} drawn=${drawn} skipped=${skipped} canvas=${w}x${h}`;
-        if (nodes.length > 0) {
-          const n0 = nodes[0];
-          dbg += ` | node[0]: type=${n0.type} x=${Math.round(n0.x)} y=${Math.round(n0.y)}`;
-        }
-        if (nodes.length > 1) {
-          const n1 = nodes[1];
-          dbg += ` | [1]: type=${n1.type} x=${Math.round(n1.x)} y=${Math.round(n1.y)}`;
-        }
-        ctx.fillText(dbg, 34, 94);
+        ctx.fillText(
+          `draw() nodes=${nodes.length} drawn=${drawn} skipped=${skipped} canvas=${w}x${h}`,
+          34,
+          94
+        );
         ctx.restore();
 
         // Tooltip
