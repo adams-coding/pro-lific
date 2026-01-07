@@ -454,8 +454,12 @@
       }
 
       function draw() {
-        const w = CSS_W || canvas.clientWidth || 1;
-        const h = CSS_H || canvas.clientHeight || 1;
+        // Safety: if the canvas ended up with a tiny layout box, re-measure/re-size.
+        if (canvas.width < 50 || canvas.height < 50) {
+          resize();
+        }
+        const w = CSS_W || window.innerWidth || canvas.clientWidth || 1;
+        const h = CSS_H || window.innerHeight || canvas.clientHeight || 1;
         ctx.clearRect(0, 0, w, h);
 
         // Background stars (parallax)
@@ -476,11 +480,13 @@
 
         // Debug beacon: should always be visible (helps confirm the canvas is rendering).
         ctx.save();
-        ctx.globalAlpha = 0.35;
+        ctx.globalAlpha = 1.0;
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(18, 18, 2.5, 0, Math.PI * 2);
+        ctx.arc(16, 16, 6, 0, Math.PI * 2);
         ctx.fill();
+        ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+        ctx.fillText('draw()', 28, 20);
         ctx.restore();
 
         // Links
