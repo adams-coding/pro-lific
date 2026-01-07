@@ -125,5 +125,34 @@
     "watch_folders": [
       "coding"
     ]
+  },
+  {
+    "churn_loc_estimate": 491,
+    "counts": {
+      "assets_added": 3,
+      "assets_modified": 9,
+      "assets_removed": 0,
+      "files_added": 4,
+      "files_modified": 13,
+      "files_removed": 0,
+      "folders_added": 0,
+      "folders_modified": 8,
+      "folders_removed": 0
+    },
+    "event_id": "2026-01-07T08:49:37Z",
+    "languages": [
+      {
+        "delta_bytes": 16701,
+        "estimated_loc_delta": 491,
+        "language": "Python"
+      }
+    ],
+    "net_loc_estimate": 491,
+    "schema_version": 1,
+    "total_delta_bytes": 21588,
+    "unknown_delta_bytes": 4887,
+    "watch_folders": [
+      "Project-20a2de662e"
+    ]
   }
 ]

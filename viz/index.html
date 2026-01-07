@@ -5,56 +5,135 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Prolific: Git Active</title>
     <style>
-      :root { color-scheme: light dark; }
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
-      header { display: flex; gap: 16px; align-items: baseline; }
-      h1 { font-size: 18px; margin: 0; }
-      .sub { opacity: 0.8; }
-      #viz { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 12px; padding: 12px; }
-      .row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
-      select, button { padding: 6px 8px; }
-      .note { font-size: 12px; opacity: 0.75; margin-top: 10px; }
-      .tooltip { position: fixed; pointer-events: none; background: Canvas; color: CanvasText; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 10px; padding: 8px 10px; font-size: 12px; max-width: 360px; display: none; }
-      .badge { display: inline-block; padding: 2px 6px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-right: 6px; }
+      :root { color-scheme: dark; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: radial-gradient(1200px 800px at 30% 20%, #171a22 0%, #0b0c10 45%, #07080b 100%);
+        color: #e7e9ee;
+        overflow-x: hidden;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        backdrop-filter: blur(10px);
+        background: color-mix(in srgb, #0b0c10 82%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, #fff 10%, transparent);
+      }
+      .topbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+      }
+      .brand { display: flex; gap: 12px; align-items: baseline; }
+      h1 { font-size: 16px; margin: 0; letter-spacing: 0.2px; }
+      .sub { opacity: 0.75; font-size: 13px; }
+      .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      select, button {
+        padding: 7px 10px;
+        border-radius: 10px;
+        border: 1px solid color-mix(in srgb, #fff 14%, transparent);
+        background: color-mix(in srgb, #0b0c10 65%, transparent);
+        color: #e7e9ee;
+        cursor: pointer;
+      }
+      button:hover { border-color: color-mix(in srgb, #fff 22%, transparent); }
+      .pill {
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, #fff 14%, transparent);
+        opacity: 0.85;
+        font-size: 12px;
+      }
+      .stage {
+        position: relative;
+        height: 100vh;
+        width: 100vw;
+      }
+      canvas { display: block; width: 100%; height: 100%; }
+      .hint {
+        position: absolute;
+        left: 18px;
+        bottom: 14px;
+        font-size: 12px;
+        opacity: 0.65;
+        max-width: min(720px, calc(100vw - 36px));
+        line-height: 1.35;
+      }
+      .tooltip {
+        position: fixed;
+        pointer-events: none;
+        background: color-mix(in srgb, #0b0c10 85%, transparent);
+        color: #e7e9ee;
+        border: 1px solid color-mix(in srgb, #fff 16%, transparent);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 12px;
+        max-width: 420px;
+        display: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, #fff 18%, transparent);
+        margin-right: 8px;
+        opacity: 0.9;
+      }
     </style>
   </head>
   <body>
     <header>
-      <h1>Prolific: Git Active</h1>
-      <div class="sub">Timeline bubblemap (generated from metadata only)</div>
+      <div class="topbar">
+        <div class="brand">
+          <h1>Prolific: Git Active</h1>
+          <div class="sub">Project systems (metadata only, no file content reads)</div>
+        </div>
+        <div class="controls">
+          <label class="sub">Bubble size:
+            <select id="metric">
+              <option value="net_loc_estimate">Estimated net LOC</option>
+              <option value="churn_loc_estimate">Estimated churn LOC</option>
+              <option value="total_delta_bytes">Delta bytes</option>
+            </select>
+          </label>
+          <button id="reload">Reload</button>
+          <div class="pill" id="count"></div>
+        </div>
+      </div>
     </header>
 
-    <div class="row">
-      <label>Bubble size metric:
-        <select id="metric">
-          <option value="net_loc_estimate">Estimated net LOC</option>
-          <option value="churn_loc_estimate">Estimated churn LOC</option>
-          <option value="total_delta_bytes">Delta bytes</option>
-        </select>
-      </label>
-      <button id="reload">Reload</button>
-      <div class="sub" id="count"></div>
-    </div>
-
-    <div id="viz">
-      <svg id="svg" width="100%" height="360" viewBox="0 0 1000 360" preserveAspectRatio="none"></svg>
-      <div class="note">No file names/paths or contents are stored here—only aggregates by extension and size deltas.</div>
+    <div class="stage">
+      <canvas id="c"></canvas>
+      <div class="hint">
+        Scroll for parallax depth. Big bubbles are projects (watch folders). Smaller bubbles are activity events and per-language satellites.
+        Nothing here includes file names/paths or file contents—only aggregates by extension and size deltas.
+      </div>
     </div>
 
     <div class="tooltip" id="tooltip"></div>
 
     <script>
-      const svg = document.getElementById('svg');
+      // Visualization version: 2 (project systems + parallax)
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
       const tooltip = document.getElementById('tooltip');
       const metricSelect = document.getElementById('metric');
       const countEl = document.getElementById('count');
 
       function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+      function lerp(a, b, t) { return a + (b - a) * t; }
 
-      function radiusFor(val, maxVal) {
-        if (maxVal <= 0) return 6;
-        const t = Math.sqrt(Math.abs(val) / maxVal);
-        return 6 + t * 34; // 6..40
+      function parseEventTime(e) {
+        const s = String(e.event_id || '');
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? new Date(0) : d;
       }
 
       function fmt(n) {
@@ -63,25 +142,407 @@
         if (abs >= 1e9) return (n/1e9).toFixed(1) + 'B';
         if (abs >= 1e6) return (n/1e6).toFixed(1) + 'M';
         if (abs >= 1e3) return (n/1e3).toFixed(1) + 'K';
-        return String(n);
+        return String(Math.round(n));
       }
 
-      function showTooltip(evt, e) {
-        tooltip.style.display = 'block';
-        tooltip.innerHTML = `
-          <div><span class="badge">${e.event_id}</span></div>
-          <div>net_loc=${e.net_loc_estimate}, churn_loc=${e.churn_loc_estimate}, delta_bytes=${e.total_delta_bytes}</div>
-          <div>files +${e.counts.files_added} ~${e.counts.files_modified} -${e.counts.files_removed}</div>
-          <div style="margin-top:6px; opacity:0.9;">
-            ${(e.languages||[]).slice(0,6).map(l => `${l.language}: ${fmt(l.delta_bytes)}B`).join('<br/>')}
-          </div>
-        `;
-        tooltip.style.left = (evt.clientX + 12) + 'px';
-        tooltip.style.top = (evt.clientY + 12) + 'px';
+      function hashColor(str) {
+        // stable, vibrant-ish color from string (language/asset type)
+        let h = 2166136261;
+        for (let i=0; i<str.length; i++) {
+          h ^= str.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        const hue = Math.abs(h) % 360;
+        return `hsl(${hue} 75% 60%)`;
       }
 
-      function hideTooltip() {
-        tooltip.style.display = 'none';
+      function rgba(hexOrHsl, a) {
+        // Use CSS color-mix fallback by drawing with globalAlpha instead.
+        return hexOrHsl;
+      }
+
+      const langColor = (lang) => {
+        if (!lang) return '#7a7f8a';
+        if (lang === 'Assets') return '#a9b1bc';
+        return hashColor(lang);
+      };
+
+      // Scene state
+      let eventsCache = [];
+      let nodes = [];   // {id,type,label,x,y,z,vx,vy,r,color,meta,locked}
+      let links = [];   // {a,b,rest,k}
+      let stars = [];
+      let lastT = performance.now();
+      let mouse = { x: 0, y: 0, down: false };
+      let hovered = null;
+
+      function resize() {
+        const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function scrollY() {
+        return window.scrollY || 0;
+      }
+
+      function ensureStars() {
+        const w = canvas.clientWidth, h = canvas.clientHeight;
+        const target = Math.floor((w*h) / 18000);
+        if (stars.length >= target) return;
+        for (let i=stars.length; i<target; i++) {
+          stars.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            z: lerp(0.15, 0.9, Math.random()),
+            r: lerp(0.6, 1.6, Math.random()),
+            a: lerp(0.08, 0.25, Math.random()),
+          });
+        }
+      }
+
+      function buildScene(events) {
+        events = [...events].sort((a, b) => parseEventTime(a) - parseEventTime(b));
+        eventsCache = events;
+        countEl.textContent = `${events.length} event${events.length === 1 ? '' : 's'}`;
+
+        nodes = [];
+        links = [];
+
+        // Build "project cores"
+        const projectLabels = new Map(); // label -> id
+        for (const e of events) {
+          const wfs = Array.isArray(e.watch_folders) ? e.watch_folders : [];
+          for (const w of wfs) {
+            const label = String(w || 'project');
+            if (!projectLabels.has(label)) {
+              projectLabels.set(label, `p:${label}`);
+            }
+          }
+        }
+        if (projectLabels.size === 0) {
+          projectLabels.set('project', 'p:project');
+        }
+
+        const projects = [...projectLabels.entries()];
+        const w = canvas.clientWidth, h = canvas.clientHeight;
+        const baseX = w * 0.5;
+        const spread = Math.min(520, w * 0.7);
+        projects.forEach(([label, id], idx) => {
+          const t = projects.length <= 1 ? 0.5 : idx / (projects.length - 1);
+          nodes.push({
+            id,
+            type: 'project',
+            label,
+            x: baseX + (t - 0.5) * spread,
+            y: h * 0.45,
+            z: lerp(0.25, 0.7, Math.random()),
+            vx: 0, vy: 0,
+            r: 40,
+            color: '#7cf2c5',
+            meta: {},
+            locked: false,
+          });
+        });
+
+        // Vertical "scroll depth" mapping (events down the page)
+        const times = events.map(e => parseEventTime(e).getTime());
+        const tMin = Math.min(...times, Date.now());
+        const tMax = Math.max(...times, Date.now());
+        const span = Math.max(1, tMax - tMin);
+
+        // Make page scrollable proportional to history length.
+        const days = Math.max(1, Math.ceil(span / (24*3600*1000)));
+        const worldHeight = clamp(days * 520, 900, 8000);
+        document.body.style.height = `${Math.max(window.innerHeight, worldHeight + 120)}px`;
+
+        const metric = metricSelect.value;
+        const maxAbs = Math.max(1, ...events.map(e => Math.abs(Number(e[metric] ?? 0))));
+
+        function addNode(n) { nodes.push(n); return n; }
+        function addLink(a, b, rest, k) { links.push({ a, b, rest, k }); }
+        function getNode(id) { return nodes.find(n => n.id === id); }
+
+        // Event + satellites
+        events.forEach((e, idx) => {
+          const metricVal = Number(e[metric] ?? 0);
+          const vAbs = Math.abs(metricVal);
+          const tNorm = (parseEventTime(e).getTime() - tMin) / span;
+
+          const y = lerp(window.innerHeight * 0.25, worldHeight, tNorm);
+          const orbit = lerp(90, 170, Math.random());
+          const theta = (idx * 1.7) % (Math.PI * 2);
+
+          const watchFolders = Array.isArray(e.watch_folders) && e.watch_folders.length ? e.watch_folders : ['project'];
+          // Attach to first project label (simple). If multiple, we "fan" by small offsets.
+          watchFolders.forEach((wf, j) => {
+            const projectId = projectLabels.get(String(wf)) || `p:${String(wf)}`;
+            const pNode = getNode(projectId) || getNode('p:project');
+            if (!pNode) return;
+
+            const eventId = `e:${e.event_id}:${j}`;
+            const r = 10 + Math.sqrt(vAbs / maxAbs) * 24;
+            const ev = addNode({
+              id: eventId,
+              type: 'event',
+              label: String(e.event_id || ''),
+              x: pNode.x + Math.cos(theta + j*0.6) * orbit,
+              y,
+              z: lerp(0.35, 1.0, Math.random()),
+              vx: 0, vy: 0,
+              r,
+              color: metricVal >= 0 ? '#2bffb3' : '#ff4d6d',
+              meta: { event: e },
+              locked: false,
+            });
+            addLink(pNode.id, ev.id, orbit, 0.015);
+
+            // Satellites by language (top 4 by abs delta bytes)
+            const langs = Array.isArray(e.languages) ? e.languages : [];
+            const top = [...langs]
+              .sort((a,b) => Math.abs(Number(b.delta_bytes||0)) - Math.abs(Number(a.delta_bytes||0)))
+              .slice(0, 4);
+
+            const satOrbit = lerp(34, 62, Math.random());
+            top.forEach((l, k) => {
+              const lang = String(l.language || 'Unknown');
+              const delta = Number(l.delta_bytes || 0);
+              const rr = 6 + Math.sqrt(Math.abs(delta) / Math.max(1, maxAbs)) * 10;
+              const sid = `s:${eventId}:${lang}:${k}`;
+              const a = theta + 1.3 + k * (Math.PI * 2 / Math.max(3, top.length));
+              const sn = addNode({
+                id: sid,
+                type: 'sat',
+                label: lang,
+                x: ev.x + Math.cos(a) * satOrbit,
+                y: ev.y + Math.sin(a) * satOrbit,
+                z: lerp(0.55, 1.0, Math.random()),
+                vx: 0, vy: 0,
+                r: rr,
+                color: langColor(lang),
+                meta: { delta_bytes: delta, parent: eventId },
+                locked: false,
+              });
+              addLink(ev.id, sn.id, satOrbit, 0.03);
+            });
+
+            // Asset satellite if unknown bytes changed
+            const unknown = Number(e.unknown_delta_bytes || 0);
+            if (unknown !== 0) {
+              const rr = 7 + Math.sqrt(Math.abs(unknown) / Math.max(1, maxAbs)) * 10;
+              const a = theta - 1.1;
+              const sid = `s:${eventId}:Assets`;
+              const sn = addNode({
+                id: sid,
+                type: 'sat',
+                label: 'Assets',
+                x: ev.x + Math.cos(a) * (satOrbit + 12),
+                y: ev.y + Math.sin(a) * (satOrbit + 12),
+                z: lerp(0.55, 1.0, Math.random()),
+                vx: 0, vy: 0,
+                r: rr,
+                color: langColor('Assets'),
+                meta: { delta_bytes: unknown, parent: eventId },
+                locked: false,
+              });
+              addLink(ev.id, sn.id, satOrbit + 12, 0.03);
+            }
+          });
+        });
+      }
+
+      function applyPhysics(dt) {
+        const w = canvas.clientWidth, h = canvas.clientHeight;
+        const centerX = w * 0.5;
+
+        // Mild global forces + noise
+        for (const n of nodes) {
+          if (n.locked) continue;
+          // keep within view bounds (soft)
+          const bx = clamp(n.x, 40, w - 40);
+          const by = clamp(n.y, 60, (document.body.scrollHeight || h) - 60);
+          n.vx += (bx - n.x) * 0.002;
+          n.vy += (by - n.y) * 0.002;
+
+          // slight drift to keep things alive
+          const jitter = 0.06;
+          n.vx += (Math.random() - 0.5) * jitter;
+          n.vy += (Math.random() - 0.5) * jitter;
+
+          // stabilize projects near center horizontally
+          if (n.type === 'project') {
+            n.vx += (centerX - n.x) * 0.0008;
+          }
+        }
+
+        // Repulsion (cheap n^2; OK for small datasets)
+        for (let i=0; i<nodes.length; i++) {
+          for (let j=i+1; j<nodes.length; j++) {
+            const a = nodes[i], b = nodes[j];
+            const dx = b.x - a.x, dy = b.y - a.y;
+            const d2 = dx*dx + dy*dy + 0.0001;
+            const minD = (a.r + b.r) * 0.85;
+            if (d2 < (minD*minD*10)) {
+              const f = 220 / d2; // tuned
+              const fx = dx * f, fy = dy * f;
+              if (!a.locked) { a.vx -= fx * dt; a.vy -= fy * dt; }
+              if (!b.locked) { b.vx += fx * dt; b.vy += fy * dt; }
+            }
+          }
+        }
+
+        // Spring links
+        for (const l of links) {
+          const a = nodes.find(n => n.id === l.a);
+          const b = nodes.find(n => n.id === l.b);
+          if (!a || !b) continue;
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const d = Math.sqrt(dx*dx + dy*dy) || 1;
+          const diff = d - l.rest;
+          const f = l.k * diff;
+          const fx = (dx / d) * f;
+          const fy = (dy / d) * f;
+          if (!a.locked) { a.vx += fx; a.vy += fy; }
+          if (!b.locked) { b.vx -= fx; b.vy -= fy; }
+        }
+
+        // Integrate with damping
+        const damping = 0.92;
+        for (const n of nodes) {
+          if (n.locked) continue;
+          n.vx *= damping;
+          n.vy *= damping;
+          n.x += n.vx * 16 * dt;
+          n.y += n.vy * 16 * dt;
+        }
+      }
+
+      function nodeScreenPos(n) {
+        // Parallax: deeper nodes move slower with scroll.
+        const sy = scrollY();
+        const par = clamp(n.z, 0.15, 1.0);
+        return {
+          x: n.x,
+          y: n.y - sy * (0.65 * par),
+        };
+      }
+
+      function draw() {
+        const w = canvas.clientWidth, h = canvas.clientHeight;
+        ctx.clearRect(0, 0, w, h);
+
+        // Background stars (parallax)
+        ensureStars();
+        ctx.save();
+        ctx.fillStyle = '#0b0c10';
+        ctx.fillRect(0, 0, w, h);
+        for (const s of stars) {
+          const yy = s.y - scrollY() * (0.25 * s.z);
+          const y = ((yy % (h + 50)) + (h + 50)) % (h + 50) - 25;
+          ctx.globalAlpha = s.a;
+          ctx.fillStyle = '#e7e9ee';
+          ctx.beginPath();
+          ctx.arc(s.x, y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // Links
+        ctx.save();
+        for (const l of links) {
+          const a = nodes.find(n => n.id === l.a);
+          const b = nodes.find(n => n.id === l.b);
+          if (!a || !b) continue;
+          const ap = nodeScreenPos(a);
+          const bp = nodeScreenPos(b);
+          const alpha = a.type === 'project' || b.type === 'project' ? 0.22 : 0.18;
+          ctx.globalAlpha = alpha;
+          ctx.strokeStyle = '#cfd6e1';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(ap.x, ap.y);
+          ctx.lineTo(bp.x, bp.y);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // Nodes
+        hovered = null;
+        const mx = mouse.x, my = mouse.y;
+        const drawOrder = [...nodes].sort((a,b) => (a.z - b.z) || (a.r - b.r));
+        for (const n of drawOrder) {
+          const p = nodeScreenPos(n);
+
+          // Hover detection (screen coords)
+          const dx = mx - p.x;
+          const dy = my - p.y;
+          if ((dx*dx + dy*dy) <= (n.r*n.r)) {
+            hovered = n;
+          }
+
+          // Glow
+          ctx.save();
+          const g = ctx.createRadialGradient(p.x, p.y, Math.max(1, n.r * 0.2), p.x, p.y, n.r * 2.2);
+          g.addColorStop(0, n.color);
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.globalAlpha = 0.12 + n.z * 0.12;
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, n.r * 2.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          // Core
+          ctx.save();
+          const gg = ctx.createRadialGradient(p.x - n.r*0.25, p.y - n.r*0.25, 1, p.x, p.y, n.r);
+          gg.addColorStop(0, 'rgba(255,255,255,0.35)');
+          gg.addColorStop(0.22, n.color);
+          gg.addColorStop(1, 'rgba(0,0,0,0.35)');
+          ctx.fillStyle = gg;
+          ctx.globalAlpha = 0.95;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, n.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.35;
+          ctx.strokeStyle = '#e7e9ee';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Tooltip
+        if (hovered) {
+          tooltip.style.display = 'block';
+          const n = hovered;
+          if (n.type === 'project') {
+            tooltip.innerHTML = `<div><span class="badge">Project</span>${n.label}</div>`;
+          } else if (n.type === 'event') {
+            const e = (n.meta && n.meta.event) ? n.meta.event : {};
+            const wf = (e.watch_folders || []).join(', ');
+            tooltip.innerHTML = `
+              <div><span class="badge">Event</span>${String(e.event_id || '')}</div>
+              ${wf ? `<div>project: ${wf}</div>` : ``}
+              <div>net_loc=${e.net_loc_estimate}, churn_loc=${e.churn_loc_estimate}, delta_bytes=${e.total_delta_bytes}</div>
+              <div>files +${e.counts.files_added} ~${e.counts.files_modified} -${e.counts.files_removed}</div>
+            `;
+          } else {
+            tooltip.innerHTML = `<div><span class="badge">Type</span>${n.label}</div><div>delta_bytes=${fmt(Number(n.meta?.delta_bytes||0))}</div>`;
+          }
+          tooltip.style.left = (mouse.x + 14) + 'px';
+          tooltip.style.top = (mouse.y + 14) + 'px';
+        } else {
+          tooltip.style.display = 'none';
+        }
+      }
+
+      function frame(now) {
+        const dt = clamp((now - lastT) / 1000, 0.01, 0.05);
+        lastT = now;
+        applyPhysics(dt);
+        draw();
+        requestAnimationFrame(frame);
       }
 
       async function loadEvents() {
@@ -90,58 +551,28 @@
         return await res.json();
       }
 
-      function render(events) {
-        const metric = metricSelect.value;
-        svg.innerHTML = '';
-        const w = 1000, h = 360;
-        const pad = 30;
-        const n = events.length;
-        countEl.textContent = `${n} event${n===1?'':'s'}`;
-        if (n === 0) {
-          const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          t.setAttribute('x', '20'); t.setAttribute('y', '40');
-          t.textContent = 'No events yet. Run the agent to generate reports.';
-          svg.appendChild(t);
-          return;
-        }
-
-        const maxVal = Math.max(...events.map(e => Math.abs(Number(e[metric] ?? 0))));
-        for (let i=0; i<n; i++) {
-          const e = events[i];
-          const x = pad + (i * (w - 2*pad) / Math.max(1, n-1));
-          const y = h/2;
-          const val = Number(e[metric] ?? 0);
-          const r = radiusFor(val, maxVal);
-
-          const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          c.setAttribute('cx', String(x));
-          c.setAttribute('cy', String(y));
-          c.setAttribute('r', String(r));
-          c.setAttribute('fill', val >= 0 ? 'color-mix(in srgb, #2b7 55%, transparent)' : 'color-mix(in srgb, #d44 55%, transparent)');
-          c.setAttribute('stroke', 'color-mix(in srgb, currentColor 30%, transparent)');
-          c.setAttribute('stroke-width', '1');
-          c.addEventListener('mousemove', (evt) => showTooltip(evt, e));
-          c.addEventListener('mouseleave', hideTooltip);
-          svg.appendChild(c);
-        }
-      }
-
       async function main() {
         try {
           const events = await loadEvents();
-          render(events);
+          buildScene(events);
         } catch (e) {
-          svg.innerHTML = '';
-          const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          t.setAttribute('x', '20'); t.setAttribute('y', '40');
-          t.textContent = String(e);
-          svg.appendChild(t);
+          countEl.textContent = String(e);
         }
       }
 
-      document.getElementById('reload').addEventListener('click', main);
-      metricSelect.addEventListener('change', main);
+      function wire() {
+        window.addEventListener('resize', () => { resize(); ensureStars(); });
+        document.getElementById('reload').addEventListener('click', main);
+        metricSelect.addEventListener('change', main);
+        window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener('scroll', () => { /* parallax uses scrollY() */ });
+      }
+
+      resize();
+      ensureStars();
+      wire();
       main();
+      requestAnimationFrame(frame);
     </script>
   </body>
 </html>
