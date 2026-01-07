@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prolific: Git Active</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+      header { display: flex; gap: 16px; align-items: baseline; }
+      h1 { font-size: 18px; margin: 0; }
+      .sub { opacity: 0.8; }
+      #viz { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 12px; padding: 12px; }
+      .row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+      select, button { padding: 6px 8px; }
+      .note { font-size: 12px; opacity: 0.75; margin-top: 10px; }
+      .tooltip { position: fixed; pointer-events: none; background: Canvas; color: CanvasText; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 10px; padding: 8px 10px; font-size: 12px; max-width: 360px; display: none; }
+      .badge { display: inline-block; padding: 2px 6px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-right: 6px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Prolific: Git Active</h1>
+      <div class="sub">Timeline bubblemap (generated from metadata only)</div>
+    </header>
+
+    <div class="row">
+      <label>Bubble size metric:
+        <select id="metric">
+          <option value="net_loc_estimate">Estimated net LOC</option>
+          <option value="churn_loc_estimate">Estimated churn LOC</option>
+          <option value="total_delta_bytes">Delta bytes</option>
+        </select>
+      </label>
+      <button id="reload">Reload</button>
+      <div class="sub" id="count"></div>
+    </div>
+
+    <div id="viz">
+      <svg id="svg" width="100%" height="360" viewBox="0 0 1000 360" preserveAspectRatio="none"></svg>
+      <div class="note">No file names/paths or contents are stored here—only aggregates by extension and size deltas.</div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+      const svg = document.getElementById('svg');
+      const tooltip = document.getElementById('tooltip');
+      const metricSelect = document.getElementById('metric');
+      const countEl = document.getElementById('count');
+
+      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+      function radiusFor(val, maxVal) {
+        if (maxVal <= 0) return 6;
+        const t = Math.sqrt(Math.abs(val) / maxVal);
+        return 6 + t * 34; // 6..40
+      }
+
+      function fmt(n) {
+        if (typeof n !== 'number') return String(n);
+        const abs = Math.abs(n);
+        if (abs >= 1e9) return (n/1e9).toFixed(1) + 'B';
+        if (abs >= 1e6) return (n/1e6).toFixed(1) + 'M';
+        if (abs >= 1e3) return (n/1e3).toFixed(1) + 'K';
+        return String(n);
+      }
+
+      function showTooltip(evt, e) {
+        tooltip.style.display = 'block';
+        tooltip.innerHTML = `
+          <div><span class="badge">${e.event_id}</span></div>
+          <div>net_loc=${e.net_loc_estimate}, churn_loc=${e.churn_loc_estimate}, delta_bytes=${e.total_delta_bytes}</div>
+          <div>files +${e.counts.files_added} ~${e.counts.files_modified} -${e.counts.files_removed}</div>
+          <div style="margin-top:6px; opacity:0.9;">
+            ${(e.languages||[]).slice(0,6).map(l => `${l.language}: ${fmt(l.delta_bytes)}B`).join('<br/>')}
+          </div>
+        `;
+        tooltip.style.left = (evt.clientX + 12) + 'px';
+        tooltip.style.top = (evt.clientY + 12) + 'px';
+      }
+
+      function hideTooltip() {
+        tooltip.style.display = 'none';
+      }
+
+      async function loadEvents() {
+        const res = await fetch('./events.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Failed to load events.json');
+        return await res.json();
+      }
+
+      function render(events) {
+        const metric = metricSelect.value;
+        svg.innerHTML = '';
+        const w = 1000, h = 360;
+        const pad = 30;
+        const n = events.length;
+        countEl.textContent = `${n} event${n===1?'':'s'}`;
+        if (n === 0) {
+          const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          t.setAttribute('x', '20'); t.setAttribute('y', '40');
+          t.textContent = 'No events yet. Run the agent to generate reports.';
+          svg.appendChild(t);
+          return;
+        }
+
+        const maxVal = Math.max(...events.map(e => Math.abs(Number(e[metric] ?? 0))));
+        for (let i=0; i<n; i++) {
+          const e = events[i];
+          const x = pad + (i * (w - 2*pad) / Math.max(1, n-1));
+          const y = h/2;
+          const val = Number(e[metric] ?? 0);
+          const r = radiusFor(val, maxVal);
+
+          const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          c.setAttribute('cx', String(x));
+          c.setAttribute('cy', String(y));
+          c.setAttribute('r', String(r));
+          c.setAttribute('fill', val >= 0 ? 'color-mix(in srgb, #2b7 55%, transparent)' : 'color-mix(in srgb, #d44 55%, transparent)');
+          c.setAttribute('stroke', 'color-mix(in srgb, currentColor 30%, transparent)');
+          c.setAttribute('stroke-width', '1');
+          c.addEventListener('mousemove', (evt) => showTooltip(evt, e));
+          c.addEventListener('mouseleave', hideTooltip);
+          svg.appendChild(c);
+        }
+      }
+
+      async function main() {
+        try {
+          const events = await loadEvents();
+          render(events);
+        } catch (e) {
+          svg.innerHTML = '';
+          const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          t.setAttribute('x', '20'); t.setAttribute('y', '40');
+          t.textContent = String(e);
+          svg.appendChild(t);
+        }
+      }
+
+      document.getElementById('reload').addEventListener('click', main);
+      metricSelect.addEventListener('change', main);
+      main();
+    </script>
+  </body>
+</html>
