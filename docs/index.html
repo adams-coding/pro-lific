@@ -400,15 +400,12 @@
       }
 
       function nodeScreenPos(n) {
-        // Parallax: deeper nodes move slower with scroll.
-        const sy = scrollY();
-        const par = clamp(num(n.z, 1.0), 0.25, 1.0);
-        // FORCE finite, guaranteed coordinates by using num() with safe fallbacks.
+        // Simple 1:1 mapping - no parallax (was causing NaN)
         const rawX = num(n.x, window.innerWidth * 0.5);
         const rawY = num(n.y, window.innerHeight * 0.5);
         return {
           x: rawX,
-          y: (rawY - sy) + (sy * (1 - par) * 0.25),
+          y: rawY,
         };
       }
 
