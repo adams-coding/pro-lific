@@ -260,13 +260,13 @@
             type: 'project',
             label,
             x: baseX + (t - 0.5) * spread,
-            y: h * 0.45,
-            z: lerp(0.25, 0.7, Math.random()),
+            y: 220, // Fixed Y near top of page (below header)
+            z: 0.5, // Mid-depth for project cores
             vx: 0, vy: 0,
-            r: 40,
+            r: 50, // Slightly larger project cores
             color: '#7cf2c5',
             meta: {},
-            locked: false,
+            locked: true, // Lock projects so they stay put
           });
         });
 
@@ -277,9 +277,12 @@
         const span = Math.max(1, tMax - tMin);
 
         // Make page scrollable proportional to history length.
+        // Use index-based spacing as minimum to ensure visual separation even if all events are same-day.
         const days = Math.max(1, Math.ceil(span / (24*3600*1000)));
-        const worldHeight = clamp(days * 520, 900, 8000);
-        document.body.style.height = `${Math.max(window.innerHeight, worldHeight + 120)}px`;
+        const minWorldHeight = 400 + (events.length * 180); // 180px per event minimum
+        const timeBasedHeight = days * 520;
+        const worldHeight = clamp(Math.max(minWorldHeight, timeBasedHeight), 900, 12000);
+        document.body.style.height = `${Math.max(window.innerHeight, worldHeight + 200)}px`;
 
         const metric = METRIC;
         let maxAbs = 1;
@@ -296,8 +299,10 @@
           const metricVal = num(e?.[metric], 0);
           const vAbs = Math.abs(metricVal);
           const tNorm = (parseEventTime(e).getTime() - tMin) / span;
-
-          const y = lerp(window.innerHeight * 0.25, worldHeight, tNorm);
+          // Mix time-based and index-based Y positioning for better visual separation.
+          const timeY = lerp(400, worldHeight - 200, tNorm);
+          const indexY = 400 + (idx * 180);
+          const y = Math.max(timeY, indexY); // Use whichever gives more vertical spread
           const orbit = lerp(90, 170, Math.random());
           const theta = (idx * 1.7) % (Math.PI * 2);
 
@@ -384,35 +389,30 @@
         const h = CSS_H || window.innerHeight || canvas.clientHeight || 1;
         const centerX = w * 0.5;
 
-        // Mild global forces + noise
+        // Mild global forces + very gentle drift
         for (const n of nodes) {
           if (n.locked) continue;
           // keep within view bounds (soft)
           const bx = clamp(n.x, 40, w - 40);
-          const by = clamp(n.y, 60, (document.body.scrollHeight || h) - 60);
-          n.vx += (bx - n.x) * 0.002;
-          n.vy += (by - n.y) * 0.002;
+          const by = clamp(n.y, 220, (document.body.scrollHeight || h) - 60);
+          n.vx += (bx - n.x) * 0.001;
+          n.vy += (by - n.y) * 0.001;
 
-          // slight drift to keep things alive
-          const jitter = 0.06;
+          // Very gentle drift to keep things subtly alive (reduced from 0.06 to 0.01)
+          const jitter = 0.01;
           n.vx += (Math.random() - 0.5) * jitter;
           n.vy += (Math.random() - 0.5) * jitter;
-
-          // stabilize projects near center horizontally
-          if (n.type === 'project') {
-            n.vx += (centerX - n.x) * 0.0008;
-          }
         }
 
-        // Repulsion (cheap n^2; OK for small datasets)
+        // Repulsion (cheap n^2; OK for small datasets) - reduced strength for stability
         for (let i=0; i<nodes.length; i++) {
           for (let j=i+1; j<nodes.length; j++) {
             const a = nodes[i], b = nodes[j];
             const dx = b.x - a.x, dy = b.y - a.y;
             const d2 = dx*dx + dy*dy + 0.0001;
-            const minD = (a.r + b.r) * 0.85;
-            if (d2 < (minD*minD*10)) {
-              const f = 220 / d2; // tuned
+            const minD = (a.r + b.r) * 1.2;
+            if (d2 < (minD*minD)) {
+              const f = 80 / d2; // Reduced from 220 for less aggressive repulsion
               const fx = dx * f, fy = dy * f;
               if (!a.locked) { a.vx -= fx * dt; a.vy -= fy * dt; }
               if (!b.locked) { b.vx += fx * dt; b.vy += fy * dt; }
@@ -420,7 +420,7 @@
           }
         }
 
-        // Spring links
+        // Spring links - weaker for more stable layout
         for (const l of links) {
           const a = nodes.find(n => n.id === l.a);
           const b = nodes.find(n => n.id === l.b);
@@ -428,7 +428,7 @@
           const dx = b.x - a.x, dy = b.y - a.y;
           const d = Math.sqrt(dx*dx + dy*dy) || 1;
           const diff = d - l.rest;
-          const f = l.k * diff;
+          const f = l.k * diff * 0.5; // Halve spring force for stability
           const fx = (dx / d) * f;
           const fy = (dy / d) * f;
           if (!a.locked) { a.vx += fx; a.vy += fy; }
@@ -436,7 +436,7 @@
         }
 
         // Integrate with damping
-        const damping = 0.92;
+        const damping = 0.85; // Increased damping (lower value) so nodes settle faster
         for (const n of nodes) {
           if (n.locked) continue;
           n.vx *= damping;
