@@ -315,12 +315,14 @@
 
             const eventId = `e:${e.event_id}:${j}`;
             const r = 10 + Math.sqrt(vAbs / maxAbs) * 24;
+            const evX = pNode.x + Math.cos(theta + j*0.6) * orbit;
+            const evY = y;
             const ev = addNode({
               id: eventId,
               type: 'event',
               label: String(e.event_id || ''),
-              x: pNode.x + Math.cos(theta + j*0.6) * orbit,
-              y,
+              x: evX,
+              y: evY,
               z: lerp(0.35, 1.0, Math.random()),
               vx: 0, vy: 0,
               r,
@@ -328,7 +330,11 @@
               meta: { event: e },
               locked: false,
             });
-            addLink(pNode.id, ev.id, orbit, 0.015);
+            // Use actual distance as rest length so spring doesn't fight the vertical layout
+            const dx = evX - pNode.x;
+            const dy = evY - pNode.y;
+            const actualDist = Math.sqrt(dx*dx + dy*dy);
+            addLink(pNode.id, ev.id, actualDist, 0.008);
 
             // Satellites by language (top 4 by abs delta bytes)
             const langs = Array.isArray(e.languages) ? e.languages : [];
@@ -356,7 +362,8 @@
                 meta: { delta_bytes: delta, parent: eventId },
                 locked: false,
               });
-              addLink(ev.id, sn.id, satOrbit, 0.03);
+              // Satellite orbits: use satOrbit as rest (cos²+sin²=1, so actual distance = satOrbit)
+              addLink(ev.id, sn.id, satOrbit, 0.04);
             });
 
             // Asset satellite if unknown bytes changed
@@ -378,7 +385,7 @@
                 meta: { delta_bytes: unknown, parent: eventId },
                 locked: false,
               });
-              addLink(ev.id, sn.id, satOrbit + 12, 0.03);
+              addLink(ev.id, sn.id, satOrbit + 12, 0.04);
             }
           });
         });
