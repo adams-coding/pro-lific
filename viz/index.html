@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v29</div>
+          <div class="pill" id="ver">viz v30</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v29';
+      if (verEl) verEl.textContent = 'viz v30';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -365,7 +365,7 @@
         };
         
         // Position projects in orbit around galactic center
-        const projectSize = 60; // Project core radius
+        const projectSize = 40; // Project core radius (reduced from 60)
         const projectOrbitRadius = 300; // Projects orbit at this distance from center
         
         projects.forEach(([label, id], idx) => {
@@ -445,7 +445,7 @@
             const theta = (eventIdx / Math.max(projectEvents.length, 1)) * Math.PI * 2;
 
             const eventId = `e:${e.event_id}:${projectLabel}`;
-            const baseR = 12 + Math.sqrt(vAbs / maxAbs) * 28;
+            const baseR = 8 + Math.sqrt(vAbs / maxAbs) * 18; // Reduced from 12 + 28
             const r = baseR * (0.95 + Math.random() * 0.1); // ±5% randomization
             
             // Slightly randomize orbit distance for natural variation
@@ -492,7 +492,7 @@
             top.forEach((l, k) => {
               const lang = String(l.language || 'Unknown');
                 const delta = num(l?.delta_bytes, 0);
-              const baseRR = 6 + Math.sqrt(Math.abs(delta) / Math.max(1, maxAbs)) * 10;
+              const baseRR = 4 + Math.sqrt(Math.abs(delta) / Math.max(1, maxAbs)) * 7; // Reduced from 6 + 10
               const rr = baseRR * (0.93 + Math.random() * 0.14); // ±7% randomization
               const sid = `s:${eventId}:${lang}:${k}`;
               // Satellite orbit distance with slight randomization
@@ -525,7 +525,7 @@
             // Asset satellite if unknown bytes changed
             const unknown = num(e?.unknown_delta_bytes, 0);
             if (unknown !== 0) {
-              const baseRR = 7 + Math.sqrt(Math.abs(unknown) / Math.max(1, maxAbs)) * 10;
+              const baseRR = 5 + Math.sqrt(Math.abs(unknown) / Math.max(1, maxAbs)) * 7; // Reduced from 7 + 10
               const rr = baseRR * (0.93 + Math.random() * 0.14); // ±7% randomization
               // Orbit distance with slight randomization
               const baseSatOrbit = 40 + (rr * 2);
@@ -812,7 +812,7 @@
 
           ctx.save();
           
-          // NO EDGES - Just bright center fading smoothly to nothing
+          // Reference: galaxy with bright center, WIDE diffuse glow, NO visible edge
           const baseColor = n.color || '#7cf2c5';
           const isImportant = n.type === 'project' || n.type === 'event';
           
@@ -825,49 +825,53 @@
           };
           const rgb = parseColor(baseColor);
           
-          // Reasonable size with soft fade
-          const glowSize = isImportant ? rr * 2.2 : rr * 1.8;
-          ctx.globalAlpha = 0.5;
+          // Diffuse glow - edges must be completely invisible
+          const glowSize = isImportant ? rr * 2.8 : rr * 2.2;
+          ctx.globalAlpha = 0.65; // Brighter like reference galaxies
           
           const unified = ctx.createRadialGradient(
-            px - rr * 0.05, py - rr * 0.05, 0,
+            px - rr * 0.08, py - rr * 0.08, 0,
             px, py, glowSize
           );
           
-          // Fade BASE COLOR alpha to 0, NOT to black!
+          // SUPER BRIGHT center like reference galaxies - intense white glow
           if (isImportant && rr > 20) {
-            unified.addColorStop(0, lightenColor(baseColor, 0.7));
-            unified.addColorStop(0.08, lightenColor(baseColor, 0.5));
-            unified.addColorStop(0.18, lightenColor(baseColor, 0.3));
-            unified.addColorStop(0.30, lightenColor(baseColor, 0.15));
-            unified.addColorStop(0.45, baseColor);
-            unified.addColorStop(0.60, baseColor);
-            unified.addColorStop(0.72, baseColor);
-            unified.addColorStop(0.82, `rgba(${rgb.r},${rgb.g},${rgb.b},0.9)`);
-            // Fade base color alpha - NO black transition
-            unified.addColorStop(0.88, `rgba(${rgb.r},${rgb.g},${rgb.b},0.7)`);
-            unified.addColorStop(0.91, `rgba(${rgb.r},${rgb.g},${rgb.b},0.5)`);
-            unified.addColorStop(0.935, `rgba(${rgb.r},${rgb.g},${rgb.b},0.35)`);
-            unified.addColorStop(0.955, `rgba(${rgb.r},${rgb.g},${rgb.b},0.20)`);
-            unified.addColorStop(0.97, `rgba(${rgb.r},${rgb.g},${rgb.b},0.10)`);
-            unified.addColorStop(0.982, `rgba(${rgb.r},${rgb.g},${rgb.b},0.04)`);
-            unified.addColorStop(0.991, `rgba(${rgb.r},${rgb.g},${rgb.b},0.015)`);
-            unified.addColorStop(0.997, `rgba(${rgb.r},${rgb.g},${rgb.b},0.003)`);
+            // Large bubbles - INTENSE white star-like center
+            unified.addColorStop(0, 'rgba(255,255,255,1.0)');
+            unified.addColorStop(0.04, 'rgba(255,255,255,1.0)');
+            unified.addColorStop(0.08, 'rgba(255,255,255,0.98)');
+            unified.addColorStop(0.12, 'rgba(255,255,255,0.92)');
+            unified.addColorStop(0.18, lightenColor(baseColor, 0.85));
+            unified.addColorStop(0.26, lightenColor(baseColor, 0.65));
+            unified.addColorStop(0.36, lightenColor(baseColor, 0.4));
+            unified.addColorStop(0.48, lightenColor(baseColor, 0.2));
+            unified.addColorStop(0.62, baseColor);
+            unified.addColorStop(0.74, `rgba(${rgb.r},${rgb.g},${rgb.b},0.85)`);
+            unified.addColorStop(0.83, `rgba(${rgb.r},${rgb.g},${rgb.b},0.65)`);
+            unified.addColorStop(0.90, `rgba(${rgb.r},${rgb.g},${rgb.b},0.42)`);
+            unified.addColorStop(0.94, `rgba(${rgb.r},${rgb.g},${rgb.b},0.24)`);
+            unified.addColorStop(0.97, `rgba(${rgb.r},${rgb.g},${rgb.b},0.12)`);
+            unified.addColorStop(0.98, `rgba(${rgb.r},${rgb.g},${rgb.b},0.06)`);
+            unified.addColorStop(0.99, `rgba(${rgb.r},${rgb.g},${rgb.b},0.02)`);
+            unified.addColorStop(0.995, `rgba(${rgb.r},${rgb.g},${rgb.b},0.006)`);
+            unified.addColorStop(0.998, `rgba(${rgb.r},${rgb.g},${rgb.b},0.001)`);
             unified.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
           } else {
-            unified.addColorStop(0, lightenColor(baseColor, 0.5));
-            unified.addColorStop(0.12, lightenColor(baseColor, 0.3));
-            unified.addColorStop(0.26, lightenColor(baseColor, 0.15));
-            unified.addColorStop(0.42, baseColor);
-            unified.addColorStop(0.58, baseColor);
-            unified.addColorStop(0.72, baseColor);
-            unified.addColorStop(0.84, `rgba(${rgb.r},${rgb.g},${rgb.b},0.8)`);
-            // Fade base color alpha
-            unified.addColorStop(0.90, `rgba(${rgb.r},${rgb.g},${rgb.b},0.6)`);
-            unified.addColorStop(0.94, `rgba(${rgb.r},${rgb.g},${rgb.b},0.3)`);
-            unified.addColorStop(0.97, `rgba(${rgb.r},${rgb.g},${rgb.b},0.12)`);
-            unified.addColorStop(0.985, `rgba(${rgb.r},${rgb.g},${rgb.b},0.04)`);
-            unified.addColorStop(0.995, `rgba(${rgb.r},${rgb.g},${rgb.b},0.008)`);
+            // Smaller satellites - BRIGHT white center, fast fade to wispy
+            unified.addColorStop(0, 'rgba(255,255,255,1.0)');
+            unified.addColorStop(0.04, 'rgba(255,255,255,0.95)');
+            unified.addColorStop(0.08, 'rgba(255,255,255,0.85)');
+            unified.addColorStop(0.14, lightenColor(baseColor, 0.65));
+            unified.addColorStop(0.22, lightenColor(baseColor, 0.4));
+            unified.addColorStop(0.32, lightenColor(baseColor, 0.15));
+            unified.addColorStop(0.45, baseColor);
+            unified.addColorStop(0.58, `rgba(${rgb.r},${rgb.g},${rgb.b},0.65)`);
+            unified.addColorStop(0.70, `rgba(${rgb.r},${rgb.g},${rgb.b},0.40)`);
+            unified.addColorStop(0.80, `rgba(${rgb.r},${rgb.g},${rgb.b},0.20)`);
+            unified.addColorStop(0.88, `rgba(${rgb.r},${rgb.g},${rgb.b},0.09)`);
+            unified.addColorStop(0.94, `rgba(${rgb.r},${rgb.g},${rgb.b},0.03)`);
+            unified.addColorStop(0.98, `rgba(${rgb.r},${rgb.g},${rgb.b},0.008)`);
+            unified.addColorStop(0.995, `rgba(${rgb.r},${rgb.g},${rgb.b},0.002)`);
             unified.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
           }
           
