@@ -444,7 +444,8 @@
         for (const n of nodes) {
           const x = num(n.x, 0);
           const y = num(n.y, 0);
-          const r = num(n.r, 20);
+          // Use the actual clamped radius that will be displayed
+          const r = clamp(num(n.r, 20), 2, 140);
           
           minX = Math.min(minX, x - r);
           maxX = Math.max(maxX, x + r);
@@ -531,8 +532,9 @@
           // Normalize and offset by bubble radii to connect at edges
           const ndx = dx / dist;
           const ndy = dy / dist;
-          const ar = clamp(num(a.r, 20), 2, 140);
-          const br = clamp(num(b.r, 20), 2, 140);
+          // Scale radii by zoom level like we do when drawing
+          const ar = clamp(num(a.r, 20) * zoomLevel, 2, 140);
+          const br = clamp(num(b.r, 20) * zoomLevel, 2, 140);
           
           const startX = ap.x + ndx * ar;
           const startY = ap.y + ndy * ar;
