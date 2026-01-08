@@ -104,7 +104,7 @@
         <div class="controls">
           <button id="reload">Reload</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v6</div>
+          <div class="pill" id="ver">viz v7</div>
         </div>
       </div>
     </header>
@@ -127,7 +127,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v6';
+      if (verEl) verEl.textContent = 'viz v7';
 
       function clamp(v, lo, hi) {
         const n = Number(v);
@@ -307,8 +307,9 @@
           if (!pNode) return;
 
           // Orbit parameters: scale radius based on number of events in THIS project
-          const baseRadius = 350;
-          const radiusScale = Math.max(1, projectEvents.length / 15);
+          // Use much larger radius to prevent event bubble overlap (events can be up to 140px)
+          const baseRadius = 800;
+          const radiusScale = Math.max(1.5, projectEvents.length / 10);
           const eventOrbitRadius = baseRadius * radiusScale;
 
           // Distribute THIS project's events evenly in a full 360° circle
@@ -452,7 +453,7 @@
         let badX = 0, badY = 0, badR = 0;
         ctx.restore();
 
-        // Links
+        // Links - connect bubble edges, not centers
         ctx.save();
         for (const l of links) {
           const a = nodes.find(n => n.id === l.a);
@@ -460,13 +461,31 @@
           if (!a || !b) continue;
           const ap = nodeScreenPos(a);
           const bp = nodeScreenPos(b);
+          
+          // Calculate vector from a to b
+          const dx = bp.x - ap.x;
+          const dy = bp.y - ap.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < 0.1) continue; // Skip if nodes are at same position
+          
+          // Normalize and offset by bubble radii to connect at edges
+          const ndx = dx / dist;
+          const ndy = dy / dist;
+          const ar = clamp(num(a.r, 20), 2, 140);
+          const br = clamp(num(b.r, 20), 2, 140);
+          
+          const startX = ap.x + ndx * ar;
+          const startY = ap.y + ndy * ar;
+          const endX = bp.x - ndx * br;
+          const endY = bp.y - ndy * br;
+          
           const alpha = a.type === 'project' || b.type === 'project' ? 0.22 : 0.18;
           ctx.globalAlpha = alpha;
           ctx.strokeStyle = '#cfd6e1';
           ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.moveTo(ap.x, ap.y);
-          ctx.lineTo(bp.x, bp.y);
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
           ctx.stroke();
         }
         ctx.restore();
