@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v19</div>
+          <div class="pill" id="ver">viz v20</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v19';
+      if (verEl) verEl.textContent = 'viz v20';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -806,59 +806,49 @@
 
           ctx.save();
           
-          // SMOOTH BLENDED GLOW - Multiple gradient stops for seamless atmosphere
+          // SIMPLE SMOOTH GLOW - Fewer stops for natural blending
           const baseColor = n.color || '#7cf2c5';
           const isImportant = n.type === 'project' || n.type === 'event';
           
-          // Outer atmosphere - starts FROM the bubble edge, not center
-          ctx.globalAlpha = isImportant ? 0.3 : 0.2;
-          const atmosphere = ctx.createRadialGradient(px, py, rr * 0.5, px, py, rr * 2.5);
-          atmosphere.addColorStop(0, baseColor);
-          atmosphere.addColorStop(0.2, baseColor);
-          atmosphere.addColorStop(0.4, baseColor);
-          atmosphere.addColorStop(0.6, baseColor);
-          atmosphere.addColorStop(0.75, 'rgba(0,0,0,0.5)');
-          atmosphere.addColorStop(0.9, 'rgba(0,0,0,0.1)');
-          atmosphere.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = atmosphere;
+          // Wide soft glow - starts inside the bubble, extends far out
+          ctx.globalAlpha = isImportant ? 0.25 : 0.18;
+          const glow = ctx.createRadialGradient(px, py, rr * 0.3, px, py, rr * 2.5);
+          glow.addColorStop(0, baseColor);
+          glow.addColorStop(0.5, baseColor);
+          glow.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = glow;
           ctx.beginPath();
           ctx.arc(px, py, rr * 2.5, 0, Math.PI * 2);
           ctx.fill();
           
-          // Main bubble - extends slightly beyond nominal radius for smooth blend
-          ctx.globalAlpha = 0.65;
+          // Main bubble - soft edge
+          ctx.globalAlpha = 0.7;
           const bubble = ctx.createRadialGradient(
-            px - rr * 0.2, py - rr * 0.2, 0,
-            px, py, rr * 1.2
+            px - rr * 0.25, py - rr * 0.25, 0,
+            px, py, rr * 1.1
           );
-          bubble.addColorStop(0, lightenColor(baseColor, 0.6));
-          bubble.addColorStop(0.15, lightenColor(baseColor, 0.4));
-          bubble.addColorStop(0.35, lightenColor(baseColor, 0.2));
-          bubble.addColorStop(0.55, baseColor);
-          bubble.addColorStop(0.75, baseColor);
-          bubble.addColorStop(0.9, 'rgba(0,0,0,0.3)');
+          bubble.addColorStop(0, lightenColor(baseColor, 0.5));
+          bubble.addColorStop(0.6, baseColor);
           bubble.addColorStop(1, 'rgba(0,0,0,0)');
           
           ctx.fillStyle = bubble;
           ctx.beginPath();
-          ctx.arc(px, py, rr * 1.2, 0, Math.PI * 2);
+          ctx.arc(px, py, rr * 1.1, 0, Math.PI * 2);
           ctx.fill();
           
-          // Bright core - only for important bubbles, blends smoothly into bubble
+          // Bright center - only for important bubbles
           if (isImportant && rr > 20) {
-            ctx.globalAlpha = 0.75;
+            ctx.globalAlpha = 0.9;
             const core = ctx.createRadialGradient(
-              px - rr * 0.15, py - rr * 0.15, 0,
-              px, py, rr * 0.5
+              px - rr * 0.2, py - rr * 0.2, 0,
+              px, py, rr * 0.4
             );
-            core.addColorStop(0, 'rgba(255,255,255,0.95)');
-            core.addColorStop(0.3, lightenColor(baseColor, 0.7));
-            core.addColorStop(0.6, lightenColor(baseColor, 0.4));
-            core.addColorStop(0.85, 'rgba(0,0,0,0.2)');
+            core.addColorStop(0, 'rgba(255,255,255,0.9)');
+            core.addColorStop(0.7, lightenColor(baseColor, 0.6));
             core.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = core;
             ctx.beginPath();
-            ctx.arc(px, py, rr * 0.5, 0, Math.PI * 2);
+            ctx.arc(px, py, rr * 0.4, 0, Math.PI * 2);
             ctx.fill();
           }
           
