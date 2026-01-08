@@ -306,8 +306,8 @@
           const pNode = getNode(projectId);
           if (!pNode) return;
 
-          // Orbit parameters: reasonable fixed radius that works visually
-          const eventOrbitRadius = 350;
+          // Orbit parameters: reasonable orbit radius for events around project core
+          const eventOrbitRadius = 180;
 
           // Distribute THIS project's events evenly in a full 360° circle
           projectEvents.forEach((e, eventIdx) => {
