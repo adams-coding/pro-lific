@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v10</div>
+          <div class="pill" id="ver">viz v11</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v10';
+      if (verEl) verEl.textContent = 'viz v11';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -274,21 +274,23 @@
           }
         }
         
-        // Position projects dynamically based on their event counts and orbit sizes
-        let currentY = h * 0.3; // Start higher up
-        const centerX = w * 0.5;
+        // Galactic center - projects orbit around this
+        const galaxyCenter = {
+          x: w * 0.5,
+          y: h * 0.5,
+        };
+        
+        // Position projects in orbit around galactic center
+        const projectSize = 60; // Project core radius
+        const projectOrbitRadius = 300; // Projects orbit at this distance from center
         
         projects.forEach(([label, id], idx) => {
           const projectEvents = eventsByProject.get(label) || [];
-          const eventOrbitRadius = 180; // Fixed orbit radius for events
-          const projectSize = 60; // Project core radius
           
-          // Each project needs space for: core + orbit + event bubbles (up to 140px) + satellites (~60px)
-          const projectSpace = projectSize + eventOrbitRadius + 140 + 60; // ~440px total diameter
-          
-          // Position this project
-          const projectX = centerX;
-          const projectY = currentY;
+          // Position project in orbit around galactic center
+          const theta = (idx / Math.max(projects.length, 1)) * Math.PI * 2;
+          const projectX = galaxyCenter.x + Math.cos(theta) * projectOrbitRadius;
+          const projectY = galaxyCenter.y + Math.sin(theta) * projectOrbitRadius;
           
           nodes.push({
             id,
@@ -303,19 +305,19 @@
             meta: { 
               projectIdx: idx,
               eventCount: projectEvents.length,
-              orbitRadius: 0, // Projects orbit each other
-              orbitAngle: (idx / Math.max(projects.length, 1)) * Math.PI * 2,
-              orbitSpeed: 0.05 // Rotation speed
+              parentId: 'galaxy', // Special parent ID for galactic center
+              orbitRadius: projectOrbitRadius,
+              orbitAngle: theta,
+              orbitSpeed: 0.03, // Slow rotation for projects
+              galaxyCenter: galaxyCenter,
             },
-            locked: false, // Allow rotation
+            locked: false,
           });
-          
-          // Advance Y for next project (add space for this project + gap)
-          currentY += projectSpace + 100; // 100px gap between projects
         });
         
-        // Set page height based on actual content
-        document.body.style.height = `${Math.max(window.innerHeight, currentY + 200)}px`;
+        // Set page height to fit content
+        const maxProjectY = projectOrbitRadius + 180 + 140 + 60; // orbit + events + satellites
+        document.body.style.height = `${Math.max(window.innerHeight, galaxyCenter.y + maxProjectY + 200)}px`;
 
         // Group events by project, then position in circular orbits
         const metric = METRIC;
@@ -454,18 +456,76 @@
           // Update orbit angle
           n.meta.orbitAngle += n.meta.orbitSpeed * dt;
           
-          // Find parent node
-          const parent = nodes.find(p => p.id === n.meta.parentId);
-          if (!parent) {
-            // Projects have no parent - they stay in their base positions
-            // (or orbit around a galactic center if we add that later)
+          // Projects orbit around galactic center
+          if (n.meta.parentId === 'galaxy') {
+            const center = n.meta.galaxyCenter;
+            const radius = n.meta.orbitRadius || 0;
+            n.x = center.x + Math.cos(n.meta.orbitAngle) * radius;
+            n.y = center.y + Math.sin(n.meta.orbitAngle) * radius;
             continue;
           }
+          
+          // Find parent node for events and satellites
+          const parent = nodes.find(p => p.id === n.meta.parentId);
+          if (!parent) continue;
           
           // Update position based on parent position + orbital rotation
           const radius = n.meta.orbitRadius || 0;
           n.x = parent.x + Math.cos(n.meta.orbitAngle) * radius;
           n.y = parent.y + Math.sin(n.meta.orbitAngle) * radius;
+        }
+        
+        // Collision detection - bubbles bounce off each other
+        const collisionDamping = 0.7; // Energy loss on collision
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const a = nodes[i];
+            const b = nodes[j];
+            
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = a.r + b.r;
+            
+            // If overlapping, apply separation force
+            if (dist < minDist && dist > 0.1) {
+              const overlap = minDist - dist;
+              const nx = dx / dist; // Normalize
+              const ny = dy / dist;
+              
+              // Separate bubbles
+              const separationForce = overlap * 0.5;
+              
+              // Only apply physics to non-locked nodes
+              if (!a.locked) {
+                a.x -= nx * separationForce;
+                a.y -= ny * separationForce;
+                // Add small bounce velocity
+                a.vx -= nx * separationForce * 0.1;
+                a.vy -= ny * separationForce * 0.1;
+              }
+              if (!b.locked) {
+                b.x += nx * separationForce;
+                b.y += ny * separationForce;
+                // Add small bounce velocity
+                b.vx += nx * separationForce * 0.1;
+                b.vy += ny * separationForce * 0.1;
+              }
+            }
+          }
+        }
+        
+        // Apply velocity and damping
+        for (const n of nodes) {
+          if (n.locked) continue;
+          
+          // Apply velocity
+          n.x += n.vx * dt;
+          n.y += n.vy * dt;
+          
+          // Damping
+          n.vx *= 0.95;
+          n.vy *= 0.95;
         }
       }
 
