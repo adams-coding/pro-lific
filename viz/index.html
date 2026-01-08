@@ -104,7 +104,7 @@
         <div class="controls">
           <button id="reload">Reload</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v5</div>
+          <div class="pill" id="ver">viz v6</div>
         </div>
       </div>
     </header>
@@ -127,7 +127,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v5';
+      if (verEl) verEl.textContent = 'viz v6';
 
       function clamp(v, lo, hi) {
         const n = Number(v);
@@ -533,10 +533,8 @@
             tooltip.innerHTML = `<div><span class="badge">Project</span>${n.label}</div>`;
           } else if (n.type === 'event') {
             const e = (n.meta && n.meta.event) ? n.meta.event : {};
-            const wf = (e.watch_folders || []).join(', ');
             tooltip.innerHTML = `
               <div><span class="badge">Event</span>${String(e.event_id || '')}</div>
-              ${wf ? `<div>project: ${wf}</div>` : ``}
               <div>net_loc=${e.net_loc_estimate}, churn_loc=${e.churn_loc_estimate}, delta_bytes=${e.total_delta_bytes}</div>
               <div>files +${e.counts.files_added} ~${e.counts.files_modified} -${e.counts.files_removed}</div>
             `;
