@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v23</div>
+          <div class="pill" id="ver">viz v24</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v23';
+      if (verEl) verEl.textContent = 'viz v24';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -806,31 +806,30 @@
 
           ctx.save();
           
-          // SINGLE SMOOTH GRADIENT - Ethereal and transparent like nebula
+          // SINGLE SMOOTH GRADIENT - Very soft and wispy like nebula
           const baseColor = n.color || '#7cf2c5';
           const isImportant = n.type === 'project' || n.type === 'event';
           
-          // ONE unified gradient - proper size, not massively overlapping
-          const glowSize = isImportant ? rr * 1.8 : rr * 1.5;
-          ctx.globalAlpha = isImportant ? 0.5 : 0.4; // TRANSPARENT, not solid!
+          // ONE unified gradient - MUCH softer and more transparent
+          const glowSize = isImportant ? rr * 2.2 : rr * 1.8;
+          ctx.globalAlpha = isImportant ? 0.35 : 0.25; // Even MORE transparent!
           
           const unified = ctx.createRadialGradient(
             px - rr * 0.15, py - rr * 0.15, 0,  // Bright spot slightly offset
             px, py, glowSize
           );
           
-          // Smooth continuous gradient - white center through color to transparent
+          // Very soft gradient - mostly transparent
           if (isImportant && rr > 20) {
-            unified.addColorStop(0, 'rgba(255,255,255,0.95)');
-            unified.addColorStop(0.08, lightenColor(baseColor, 0.6));
-            unified.addColorStop(0.25, lightenColor(baseColor, 0.3));
-            unified.addColorStop(0.45, baseColor);
-            unified.addColorStop(0.7, baseColor);
-            unified.addColorStop(1, 'rgba(0,0,0,0)');
-          } else {
-            unified.addColorStop(0, lightenColor(baseColor, 0.4));
+            unified.addColorStop(0, 'rgba(255,255,255,0.9)');
+            unified.addColorStop(0.15, lightenColor(baseColor, 0.5));
             unified.addColorStop(0.35, baseColor);
             unified.addColorStop(0.65, baseColor);
+            unified.addColorStop(1, 'rgba(0,0,0,0)');
+          } else {
+            unified.addColorStop(0, lightenColor(baseColor, 0.3));
+            unified.addColorStop(0.4, baseColor);
+            unified.addColorStop(0.7, baseColor);
             unified.addColorStop(1, 'rgba(0,0,0,0)');
           }
           
