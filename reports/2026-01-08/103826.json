@@ -1,0 +1,29 @@
+{
+  "churn_loc_estimate": 315,
+  "counts": {
+    "assets_added": 4,
+    "assets_modified": 0,
+    "assets_removed": 0,
+    "files_added": 7,
+    "files_modified": 0,
+    "files_removed": 0,
+    "folders_added": 0,
+    "folders_modified": 0,
+    "folders_removed": 0
+  },
+  "event_id": "2026-01-08T10:38:26Z",
+  "languages": [
+    {
+      "delta_bytes": 10720,
+      "estimated_loc_delta": 315,
+      "language": "Python"
+    }
+  ],
+  "net_loc_estimate": 315,
+  "schema_version": 1,
+  "total_delta_bytes": 201449,
+  "unknown_delta_bytes": 190729,
+  "watch_folders": [
+    "Project-8998feee2d"
+  ]
+}
