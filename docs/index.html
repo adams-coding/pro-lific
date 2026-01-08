@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v14</div>
+          <div class="pill" id="ver">viz v15</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v14';
+      if (verEl) verEl.textContent = 'viz v15';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -237,6 +237,41 @@
         if (!lang) return '#FF6EC7'; // Hot Pink for undefined
         return hashColor(lang);
       };
+      
+      // Color manipulation helpers for glow effects
+      function lightenColor(color, amount) {
+        // Parse hex color and increase brightness
+        if (color.startsWith('#')) {
+          const hex = color.slice(1);
+          const r = parseInt(hex.slice(0, 2), 16);
+          const g = parseInt(hex.slice(2, 4), 16);
+          const b = parseInt(hex.slice(4, 6), 16);
+          
+          const newR = Math.min(255, Math.floor(r + (255 - r) * amount));
+          const newG = Math.min(255, Math.floor(g + (255 - g) * amount));
+          const newB = Math.min(255, Math.floor(b + (255 - b) * amount));
+          
+          return `rgb(${newR}, ${newG}, ${newB})`;
+        }
+        return color;
+      }
+      
+      function darkenColor(color, amount) {
+        // Parse hex color and decrease brightness
+        if (color.startsWith('#')) {
+          const hex = color.slice(1);
+          const r = parseInt(hex.slice(0, 2), 16);
+          const g = parseInt(hex.slice(2, 4), 16);
+          const b = parseInt(hex.slice(4, 6), 16);
+          
+          const newR = Math.floor(r * (1 - amount));
+          const newG = Math.floor(g * (1 - amount));
+          const newB = Math.floor(b * (1 - amount));
+          
+          return `rgb(${newR}, ${newG}, ${newB})`;
+        }
+        return color;
+      }
 
       // Scene state
       let eventsCache = [];
@@ -764,16 +799,64 @@
           }
 
           ctx.save();
-          ctx.globalAlpha = 0.92;
-          ctx.fillStyle = n.color || '#7cf2c5';
+          
+          // GLOW EFFECT - Draw multiple layers for luminous nebula-like appearance
+          const glowIntensity = n.type === 'project' ? 1.0 : (n.type === 'event' ? 0.8 : 0.6);
+          
+          // Outer glow (largest, most transparent)
+          ctx.globalAlpha = 0.15 * glowIntensity;
+          const outerGlow = ctx.createRadialGradient(px, py, rr * 0.5, px, py, rr * 2.5);
+          outerGlow.addColorStop(0, n.color || '#7cf2c5');
+          outerGlow.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = outerGlow;
+          ctx.beginPath();
+          ctx.arc(px, py, rr * 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Middle glow
+          ctx.globalAlpha = 0.3 * glowIntensity;
+          const midGlow = ctx.createRadialGradient(px, py, rr * 0.3, px, py, rr * 1.5);
+          midGlow.addColorStop(0, n.color || '#7cf2c5');
+          midGlow.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = midGlow;
+          ctx.beginPath();
+          ctx.arc(px, py, rr * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Main bubble with radial gradient (bright center, darker edge)
+          ctx.globalAlpha = 0.95;
+          const bubbleGradient = ctx.createRadialGradient(
+            px - rr * 0.3, py - rr * 0.3, rr * 0.1, // Offset light source
+            px, py, rr
+          );
+          
+          // Parse color to create lighter center
+          const baseColor = n.color || '#7cf2c5';
+          bubbleGradient.addColorStop(0, lightenColor(baseColor, 0.4)); // Bright center
+          bubbleGradient.addColorStop(0.6, baseColor); // Original color
+          bubbleGradient.addColorStop(1, darkenColor(baseColor, 0.3)); // Darker edge
+          
+          ctx.fillStyle = bubbleGradient;
           ctx.beginPath();
           ctx.arc(px, py, rr, 0, Math.PI * 2);
-          ctx.arc(px, py, rr, 0, Math.PI * 2);
           ctx.fill();
-          ctx.globalAlpha = 0.55;
-          ctx.strokeStyle = '#e7e9ee';
-          ctx.lineWidth = 1;
-          ctx.stroke();
+          
+          // Inner highlight (star-like bright spot)
+          if (n.type === 'project' || rr > 15) {
+            ctx.globalAlpha = 0.6;
+            const highlightSize = rr * 0.25;
+            const highlight = ctx.createRadialGradient(
+              px - rr * 0.25, py - rr * 0.25, 0,
+              px - rr * 0.25, py - rr * 0.25, highlightSize
+            );
+            highlight.addColorStop(0, 'rgba(255,255,255,0.9)');
+            highlight.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = highlight;
+            ctx.beginPath();
+            ctx.arc(px - rr * 0.25, py - rr * 0.25, highlightSize, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          
           ctx.restore();
           drawn += 1;
         }
