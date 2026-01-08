@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v13</div>
+          <div class="pill" id="ver">viz v14</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v13';
+      if (verEl) verEl.textContent = 'viz v14';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -233,8 +233,8 @@
       }
 
       const langColor = (lang) => {
-        if (!lang) return '#7a7f8a';
-        if (lang === 'Assets') return '#a9b1bc';
+        // All colors come from hashColor - NO HARDCODED GREY!
+        if (!lang) return '#FF6EC7'; // Hot Pink for undefined
         return hashColor(lang);
       };
 
