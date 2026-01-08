@@ -103,8 +103,11 @@
         </div>
         <div class="controls">
           <button id="reload">Reload</button>
+          <button id="zoom-out" title="Zoom out">-</button>
+          <button id="zoom-reset" title="Reset zoom">100%</button>
+          <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v8</div>
+          <div class="pill" id="ver">viz v9</div>
         </div>
       </div>
     </header>
@@ -127,7 +130,15 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v8';
+      if (verEl) verEl.textContent = 'viz v9';
+
+      // Zoom state
+      let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
+      let targetZoom = 1.0;
+      const ZOOM_MIN = 0.1;
+      const ZOOM_MAX = 3.0;
+      const ZOOM_STEP = 0.1;
+      const ZOOM_SMOOTH = 0.15; // Smooth interpolation factor
 
       function clamp(v, lo, hi) {
         const n = Number(v);
@@ -404,16 +415,67 @@
       }
 
       function nodeScreenPos(n) {
-        // Simple 1:1 mapping - no parallax (was causing NaN)
-        const rawX = num(n.x, window.innerWidth * 0.5);
-        const rawY = num(n.y, window.innerHeight * 0.5);
+        // Apply zoom transform around viewport center
+        const w = CSS_W || window.innerWidth || canvas.clientWidth || 1;
+        const h = CSS_H || window.innerHeight || canvas.clientHeight || 1;
+        const centerX = w * 0.5;
+        const centerY = h * 0.5;
+        
+        const rawX = num(n.x, centerX);
+        const rawY = num(n.y, centerY);
+        
+        // Zoom around center
+        const zoomedX = centerX + (rawX - centerX) * zoomLevel;
+        const zoomedY = centerY + (rawY - centerY) * zoomLevel;
+        
         return {
-          x: rawX,
-          y: rawY,
+          x: zoomedX,
+          y: zoomedY,
         };
       }
 
+      function calculateBounds() {
+        // Calculate bounding box of all nodes
+        if (nodes.length === 0) return { minX: 0, maxX: 1000, minY: 0, maxY: 1000 };
+        
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        
+        for (const n of nodes) {
+          const x = num(n.x, 0);
+          const y = num(n.y, 0);
+          const r = num(n.r, 20);
+          
+          minX = Math.min(minX, x - r);
+          maxX = Math.max(maxX, x + r);
+          minY = Math.min(minY, y - r);
+          maxY = Math.max(maxY, y + r);
+        }
+        
+        return { minX, maxX, minY, maxY };
+      }
+
+      function autoFitZoom() {
+        // Calculate zoom level to fit all nodes in viewport
+        const bounds = calculateBounds();
+        const w = CSS_W || window.innerWidth || canvas.clientWidth || 1;
+        const h = CSS_H || window.innerHeight || canvas.clientHeight || 1;
+        
+        const contentWidth = bounds.maxX - bounds.minX;
+        const contentHeight = bounds.maxY - bounds.minY;
+        
+        // Add 10% padding
+        const scaleX = (w * 0.9) / contentWidth;
+        const scaleY = (h * 0.9) / contentHeight;
+        
+        targetZoom = Math.min(scaleX, scaleY, ZOOM_MAX);
+        targetZoom = Math.max(targetZoom, ZOOM_MIN);
+      }
+
       function draw() {
+        // Smooth zoom interpolation
+        zoomLevel += (targetZoom - zoomLevel) * ZOOM_SMOOTH;
+        
         // Safety: if the canvas ended up with a tiny layout box, re-measure/re-size.
         if (canvas.width < 50 || canvas.height < 50) {
           resize();
@@ -506,7 +568,8 @@
             skipped += 1;
             continue;
           }
-          const rr = clamp(nr, 2, 140);
+          // Scale radius by zoom level
+          const rr = clamp(nr * zoomLevel, 2, 140);
 
           // Hover detection (screen coords)
           const dx = mx - p.x;
@@ -586,18 +649,42 @@
           ensureStars();
           const events = await loadEvents();
           buildScene(events);
+          
+          // Auto-fit zoom to show all nodes
+          autoFitZoom();
         } catch (e) {
           countEl.textContent = String(e);
         }
       }
 
       function wire() {
-        window.addEventListener('resize', () => { resize(); ensureStars(); });
+        window.addEventListener('resize', resize);
+        
         document.getElementById('reload').addEventListener('click', main);
+        
+        // Zoom controls
+        document.getElementById('zoom-in').addEventListener('click', () => {
+          targetZoom = Math.min(targetZoom + ZOOM_STEP, ZOOM_MAX);
+        });
+        
+        document.getElementById('zoom-out').addEventListener('click', () => {
+          targetZoom = Math.max(targetZoom - ZOOM_STEP, ZOOM_MIN);
+        });
+        
+        document.getElementById('zoom-reset').addEventListener('click', () => {
+          autoFitZoom();
+        });
+        
+        // Mouse wheel zoom
+        canvas.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const delta = -Math.sign(e.deltaY) * ZOOM_STEP;
+          targetZoom = clamp(targetZoom + delta, ZOOM_MIN, ZOOM_MAX);
+        }, { passive: false });
+        
         window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
         window.addEventListener('scroll', () => { /* parallax uses scrollY() */ });
       }
-
       resize();
       ensureStars();
       wire();
