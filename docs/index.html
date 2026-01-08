@@ -104,7 +104,7 @@
         <div class="controls">
           <button id="reload">Reload</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v4</div>
+          <div class="pill" id="ver">viz v5</div>
         </div>
       </div>
     </header>
@@ -127,7 +127,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v4';
+      if (verEl) verEl.textContent = 'viz v5';
 
       function clamp(v, lo, hi) {
         const n = Number(v);
@@ -298,28 +298,33 @@
         function getNode(id) { return nodes.find(n => n.id === id); }
 
         // Position events in circular orbits around their project cores
-        events.forEach((e, idx) => {
-          const metricVal = num(e?.[metric], 0);
-          const vAbs = Math.abs(metricVal);
-          
-          // Orbit parameters: distribute events evenly around the circle
-          // Scale radius based on number of events to prevent overlap
+        // Process each project separately to distribute events evenly in a full circle
+        projects.forEach(([projectLabel, projectId]) => {
+          const projectEvents = eventsByProject.get(projectLabel) || [];
+          if (projectEvents.length === 0) return;
+
+          const pNode = getNode(projectId);
+          if (!pNode) return;
+
+          // Orbit parameters: scale radius based on number of events in THIS project
           const baseRadius = 350;
-          const radiusScale = Math.max(1, events.length / 15);
+          const radiusScale = Math.max(1, projectEvents.length / 15);
           const eventOrbitRadius = baseRadius * radiusScale;
-          const theta = (idx / Math.max(events.length, 1)) * Math.PI * 2;
 
-          const watchFolders = Array.isArray(e.watch_folders) && e.watch_folders.length ? e.watch_folders : ['project'];
-          watchFolders.forEach((wf, j) => {
-            const projectId = projectLabels.get(String(wf)) || `p:${String(wf)}`;
-            const pNode = getNode(projectId) || getNode('p:project');
-            if (!pNode) return;
+          // Distribute THIS project's events evenly in a full 360° circle
+          projectEvents.forEach((e, eventIdx) => {
+            const metricVal = num(e?.[metric], 0);
+            const vAbs = Math.abs(metricVal);
+            
+            // Calculate angle based on position within THIS project's events
+            const theta = (eventIdx / Math.max(projectEvents.length, 1)) * Math.PI * 2;
 
-            const eventId = `e:${e.event_id}:${j}`;
+            const eventId = `e:${e.event_id}:${projectLabel}`;
             const r = 12 + Math.sqrt(vAbs / maxAbs) * 28;
-            // Position event in circular orbit around project core
-            const evX = pNode.x + Math.cos(theta + j*0.5) * eventOrbitRadius;
-            const evY = pNode.y + Math.sin(theta + j*0.5) * eventOrbitRadius;
+            
+            // Position event in circular orbit around THIS project core
+            const evX = pNode.x + Math.cos(theta) * eventOrbitRadius;
+            const evY = pNode.y + Math.sin(theta) * eventOrbitRadius;
             const ev = addNode({
               id: eventId,
               type: 'event',
