@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v15</div>
+          <div class="pill" id="ver">viz v16</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v15';
+      if (verEl) verEl.textContent = 'viz v16';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -578,41 +578,47 @@
           n.y = parent.y + Math.sin(n.meta.orbitAngle) * radius;
         }
         
-        // Collision detection - bubbles bounce off each other
-        const collisionDamping = 0.7; // Energy loss on collision
+        // Soft collision detection - bubbles can partially pass through each other
+        // Like ethereal nebula clouds - they interact but don't hard collide
         for (let i = 0; i < nodes.length; i++) {
           for (let j = i + 1; j < nodes.length; j++) {
             const a = nodes[i];
             const b = nodes[j];
             
+            // Skip locked nodes entirely
+            if (a.locked && b.locked) continue;
+            
             const dx = b.x - a.x;
             const dy = b.y - a.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            const minDist = a.r + b.r;
             
-            // If overlapping, apply separation force
-            if (dist < minDist && dist > 0.1) {
-              const overlap = minDist - dist;
+            // Allow overlap - only apply force when significantly overlapping
+            // Bubbles can pass through each other with just a gentle push
+            const overlapThreshold = (a.r + b.r) * 0.7; // Only react at 70% overlap
+            
+            if (dist < overlapThreshold && dist > 0.1) {
+              const overlap = overlapThreshold - dist;
               const nx = dx / dist; // Normalize
               const ny = dy / dist;
               
-              // Separate bubbles
-              const separationForce = overlap * 0.5;
+              // Very soft, muted separation force - like clouds drifting past each other
+              const softness = 0.05; // Much gentler than before (was 0.5)
+              const separationForce = overlap * softness;
               
-              // Only apply physics to non-locked nodes
+              // Only apply to non-locked nodes
               if (!a.locked) {
                 a.x -= nx * separationForce;
                 a.y -= ny * separationForce;
-                // Add small bounce velocity
-                a.vx -= nx * separationForce * 0.1;
-                a.vy -= ny * separationForce * 0.1;
+                // Very gentle velocity change
+                a.vx -= nx * separationForce * 0.02;
+                a.vy -= ny * separationForce * 0.02;
               }
               if (!b.locked) {
                 b.x += nx * separationForce;
                 b.y += ny * separationForce;
-                // Add small bounce velocity
-                b.vx += nx * separationForce * 0.1;
-                b.vy += ny * separationForce * 0.1;
+                // Very gentle velocity change
+                b.vx += nx * separationForce * 0.02;
+                b.vy += ny * separationForce * 0.02;
               }
             }
           }
@@ -626,9 +632,9 @@
           n.x += n.vx * dt;
           n.y += n.vy * dt;
           
-          // Damping
-          n.vx *= 0.95;
-          n.vy *= 0.95;
+          // Higher damping for smoother, more fluid motion
+          n.vx *= 0.98; // was 0.95
+          n.vy *= 0.98;
         }
       }
 
@@ -800,63 +806,90 @@
 
           ctx.save();
           
-          // GLOW EFFECT - Draw multiple layers for luminous nebula-like appearance
-          const glowIntensity = n.type === 'project' ? 1.0 : (n.type === 'event' ? 0.8 : 0.6);
+          // ETHEREAL NEBULA GLOW - Like the reference image: soft edges, heavy blur, high transparency
+          const glowIntensity = n.type === 'project' ? 1.2 : (n.type === 'event' ? 1.0 : 0.8);
+          const baseColor = n.color || '#7cf2c5';
           
-          // Outer glow (largest, most transparent)
-          ctx.globalAlpha = 0.15 * glowIntensity;
-          const outerGlow = ctx.createRadialGradient(px, py, rr * 0.5, px, py, rr * 2.5);
-          outerGlow.addColorStop(0, n.color || '#7cf2c5');
+          // Enable blur for softer edges (simulate gaussian blur with multiple passes)
+          ctx.filter = 'blur(2px)';
+          
+          // Extreme outer glow (very large, very soft)
+          ctx.globalAlpha = 0.08 * glowIntensity;
+          const extremeGlow = ctx.createRadialGradient(px, py, 0, px, py, rr * 4.0);
+          extremeGlow.addColorStop(0, baseColor);
+          extremeGlow.addColorStop(0.5, baseColor);
+          extremeGlow.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = extremeGlow;
+          ctx.beginPath();
+          ctx.arc(px, py, rr * 4.0, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Far outer glow
+          ctx.globalAlpha = 0.12 * glowIntensity;
+          const farGlow = ctx.createRadialGradient(px, py, 0, px, py, rr * 3.0);
+          farGlow.addColorStop(0, baseColor);
+          farGlow.addColorStop(0.6, baseColor);
+          farGlow.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = farGlow;
+          ctx.beginPath();
+          ctx.arc(px, py, rr * 3.0, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Outer glow
+          ctx.globalAlpha = 0.2 * glowIntensity;
+          const outerGlow = ctx.createRadialGradient(px, py, 0, px, py, rr * 2.0);
+          outerGlow.addColorStop(0, baseColor);
+          outerGlow.addColorStop(0.7, baseColor);
           outerGlow.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = outerGlow;
           ctx.beginPath();
-          ctx.arc(px, py, rr * 2.5, 0, Math.PI * 2);
+          ctx.arc(px, py, rr * 2.0, 0, Math.PI * 2);
           ctx.fill();
           
           // Middle glow
-          ctx.globalAlpha = 0.3 * glowIntensity;
-          const midGlow = ctx.createRadialGradient(px, py, rr * 0.3, px, py, rr * 1.5);
-          midGlow.addColorStop(0, n.color || '#7cf2c5');
+          ctx.globalAlpha = 0.35 * glowIntensity;
+          const midGlow = ctx.createRadialGradient(px, py, 0, px, py, rr * 1.4);
+          midGlow.addColorStop(0, lightenColor(baseColor, 0.3));
+          midGlow.addColorStop(0.5, baseColor);
           midGlow.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = midGlow;
           ctx.beginPath();
-          ctx.arc(px, py, rr * 1.5, 0, Math.PI * 2);
+          ctx.arc(px, py, rr * 1.4, 0, Math.PI * 2);
           ctx.fill();
           
-          // Main bubble with radial gradient (bright center, darker edge)
-          ctx.globalAlpha = 0.95;
+          // Main bubble - VERY transparent with soft gradient
+          ctx.filter = 'blur(1px)';
+          ctx.globalAlpha = 0.5 * glowIntensity; // Much more transparent
           const bubbleGradient = ctx.createRadialGradient(
-            px - rr * 0.3, py - rr * 0.3, rr * 0.1, // Offset light source
+            px - rr * 0.2, py - rr * 0.2, 0,
             px, py, rr
           );
-          
-          // Parse color to create lighter center
-          const baseColor = n.color || '#7cf2c5';
-          bubbleGradient.addColorStop(0, lightenColor(baseColor, 0.4)); // Bright center
-          bubbleGradient.addColorStop(0.6, baseColor); // Original color
-          bubbleGradient.addColorStop(1, darkenColor(baseColor, 0.3)); // Darker edge
+          bubbleGradient.addColorStop(0, lightenColor(baseColor, 0.6)); // Very bright center
+          bubbleGradient.addColorStop(0.4, lightenColor(baseColor, 0.3));
+          bubbleGradient.addColorStop(0.7, baseColor);
+          bubbleGradient.addColorStop(1, 'rgba(0,0,0,0)'); // Fade to transparent at edge
           
           ctx.fillStyle = bubbleGradient;
           ctx.beginPath();
           ctx.arc(px, py, rr, 0, Math.PI * 2);
           ctx.fill();
           
-          // Inner highlight (star-like bright spot)
-          if (n.type === 'project' || rr > 15) {
-            ctx.globalAlpha = 0.6;
-            const highlightSize = rr * 0.25;
-            const highlight = ctx.createRadialGradient(
-              px - rr * 0.25, py - rr * 0.25, 0,
-              px - rr * 0.25, py - rr * 0.25, highlightSize
-            );
-            highlight.addColorStop(0, 'rgba(255,255,255,0.9)');
-            highlight.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = highlight;
-            ctx.beginPath();
-            ctx.arc(px - rr * 0.25, py - rr * 0.25, highlightSize, 0, Math.PI * 2);
-            ctx.fill();
-          }
+          // Inner bright core (like stars in the nebula image)
+          ctx.filter = 'blur(3px)';
+          ctx.globalAlpha = 0.7 * glowIntensity;
+          const coreGlow = ctx.createRadialGradient(
+            px - rr * 0.15, py - rr * 0.15, 0,
+            px, py, rr * 0.4
+          );
+          coreGlow.addColorStop(0, 'rgba(255,255,255,0.9)');
+          coreGlow.addColorStop(0.5, lightenColor(baseColor, 0.7));
+          coreGlow.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = coreGlow;
+          ctx.beginPath();
+          ctx.arc(px - rr * 0.1, py - rr * 0.1, rr * 0.4, 0, Math.PI * 2);
+          ctx.fill();
           
+          ctx.filter = 'none'; // Reset filter
           ctx.restore();
           drawn += 1;
         }
