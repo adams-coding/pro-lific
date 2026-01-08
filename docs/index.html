@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v26</div>
+          <div class="pill" id="ver">viz v27</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v26';
+      if (verEl) verEl.textContent = 'viz v27';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -436,9 +436,6 @@
           const pNode = getNode(projectId);
           if (!pNode) return;
 
-          // Orbit parameters: reasonable orbit radius for events around project core
-          const eventOrbitRadius = 180;
-
           // Distribute THIS project's events evenly in a full 360° circle
           projectEvents.forEach((e, eventIdx) => {
             const metricVal = num(e?.[metric], 0);
@@ -448,7 +445,12 @@
             const theta = (eventIdx / Math.max(projectEvents.length, 1)) * Math.PI * 2;
 
             const eventId = `e:${e.event_id}:${projectLabel}`;
-            const r = 12 + Math.sqrt(vAbs / maxAbs) * 28;
+            const baseR = 12 + Math.sqrt(vAbs / maxAbs) * 28;
+            const r = baseR * (0.95 + Math.random() * 0.1); // ±5% randomization
+            
+            // Slightly randomize orbit distance for natural variation
+            const baseOrbitRadius = 180;
+            const eventOrbitRadius = baseOrbitRadius * (0.92 + Math.random() * 0.16); // ±8% variation
             
             // Position event in circular orbit around THIS project core
             const evX = pNode.x + Math.cos(theta) * eventOrbitRadius;
@@ -490,10 +492,12 @@
             top.forEach((l, k) => {
               const lang = String(l.language || 'Unknown');
                 const delta = num(l?.delta_bytes, 0);
-              const rr = 6 + Math.sqrt(Math.abs(delta) / Math.max(1, maxAbs)) * 10;
+              const baseRR = 6 + Math.sqrt(Math.abs(delta) / Math.max(1, maxAbs)) * 10;
+              const rr = baseRR * (0.93 + Math.random() * 0.14); // ±7% randomization
               const sid = `s:${eventId}:${lang}:${k}`;
-              // Satellite orbit distance proportional to its size (bigger activity = further orbit)
-              const satOrbit = 40 + (rr * 2); // Base distance + 2x the radius
+              // Satellite orbit distance with slight randomization
+              const baseSatOrbit = 40 + (rr * 2);
+              const satOrbit = baseSatOrbit * (0.90 + Math.random() * 0.20); // ±10% variation
               const a = (k / Math.max(top.length, 1)) * Math.PI * 2;
               const sn = addNode({
                 id: sid,
@@ -521,9 +525,11 @@
             // Asset satellite if unknown bytes changed
             const unknown = num(e?.unknown_delta_bytes, 0);
             if (unknown !== 0) {
-              const rr = 7 + Math.sqrt(Math.abs(unknown) / Math.max(1, maxAbs)) * 10;
-              // Orbit distance proportional to size
-              const satOrbit = 40 + (rr * 2);
+              const baseRR = 7 + Math.sqrt(Math.abs(unknown) / Math.max(1, maxAbs)) * 10;
+              const rr = baseRR * (0.93 + Math.random() * 0.14); // ±7% randomization
+              // Orbit distance with slight randomization
+              const baseSatOrbit = 40 + (rr * 2);
+              const satOrbit = baseSatOrbit * (0.90 + Math.random() * 0.20); // ±10% variation
               const a = (top.length / (top.length + 1)) * Math.PI * 2;
               const sid = `s:${eventId}:Assets`;
               const sn = addNode({
