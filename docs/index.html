@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v30</div>
+          <div class="pill" id="ver">viz v31</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v30';
+      if (verEl) verEl.textContent = 'viz v31';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -366,13 +366,20 @@
         
         // Position projects in orbit around galactic center
         const projectSize = 40; // Project core radius (reduced from 60)
-        const projectOrbitRadius = 300; // Projects orbit at this distance from center
+        const baseOrbitRadius = 280; // Starting orbit distance
+        const orbitIncrement = 180; // Distance between each orbital ring
         
         projects.forEach(([label, id], idx) => {
           const projectEvents = eventsByProject.get(label) || [];
           
+          // Spiral outward: each project gets its own orbital ring
+          const ring = Math.floor(idx / 6); // 6 projects per ring
+          const posInRing = idx % 6;
+          const projectOrbitRadius = baseOrbitRadius + (ring * orbitIncrement);
+          const projectsInRing = Math.min(6, projects.length - (ring * 6));
+          
           // Position project in orbit around galactic center
-          const theta = (idx / Math.max(projects.length, 1)) * Math.PI * 2;
+          const theta = (posInRing / Math.max(projectsInRing, 1)) * Math.PI * 2;
           const projectX = galaxyCenter.x + Math.cos(theta) * projectOrbitRadius;
           const projectY = galaxyCenter.y + Math.sin(theta) * projectOrbitRadius;
           
@@ -412,8 +419,10 @@
           });
         });
         
-        // Set page height to fit content
-        const maxProjectY = projectOrbitRadius + 180 + 140 + 60; // orbit + events + satellites
+        // Set page height to fit content - account for outermost orbital ring
+        const maxRing = Math.floor(projects.length / 6);
+        const maxOrbitRadius = baseOrbitRadius + (maxRing * orbitIncrement);
+        const maxProjectY = maxOrbitRadius + 180 + 140 + 60; // orbit + events + satellites
         document.body.style.height = `${Math.max(window.innerHeight, galaxyCenter.y + maxProjectY + 200)}px`;
 
         // Group events by project, then position in circular orbits
