@@ -306,11 +306,11 @@
           const pNode = getNode(projectId);
           if (!pNode) return;
 
-          // Orbit parameters: scale radius based on number of events in THIS project
-          // Use much larger radius to prevent event bubble overlap (events can be up to 140px)
-          const baseRadius = 800;
-          const radiusScale = Math.max(1.5, projectEvents.length / 10);
-          const eventOrbitRadius = baseRadius * radiusScale;
+          // Orbit parameters: calculate radius to fit events without overlap
+          // Each event averages ~100px diameter, plus ~50px gap = 150px per event around the circle
+          const avgEventSpace = 150;
+          const circumference = projectEvents.length * avgEventSpace;
+          const eventOrbitRadius = Math.max(400, circumference / (2 * Math.PI));
 
           // Distribute THIS project's events evenly in a full 360° circle
           projectEvents.forEach((e, eventIdx) => {
