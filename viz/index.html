@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v25</div>
+          <div class="pill" id="ver">viz v26</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v25';
+      if (verEl) verEl.textContent = 'viz v26';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -806,33 +806,45 @@
 
           ctx.save();
           
-          // BRIGHT LUMINOUS GLOW - Like the center galaxy: BRIGHT but smooth
+          // BRIGHT CENTER, SMOOTH TRANSITION, SOFT BLURRED EDGES
           const baseColor = n.color || '#7cf2c5';
           const isImportant = n.type === 'project' || n.type === 'event';
           
-          // ONE unified gradient - BRIGHT and luminous with wide smooth halo
-          const glowSize = isImportant ? rr * 2.5 : rr * 2.0;
-          ctx.globalAlpha = 1.0; // BRIGHT! Full intensity!
+          // Wide glow for soft blurred edges
+          const glowSize = isImportant ? rr * 3.0 : rr * 2.5;
+          ctx.globalAlpha = 0.6; // Medium transparency overall
           
           const unified = ctx.createRadialGradient(
-            px - rr * 0.15, py - rr * 0.15, 0,
+            px - rr * 0.1, py - rr * 0.1, 0,
             px, py, glowSize
           );
           
-          // Intense bright center fading smoothly to transparent
+          // MANY stops for SMOOTH transition - intense bright center to soft transparent edge
           if (isImportant && rr > 20) {
+            // VERY BRIGHT CENTER
             unified.addColorStop(0, 'rgba(255,255,255,1)');
-            unified.addColorStop(0.1, 'rgba(255,255,255,0.9)');
-            unified.addColorStop(0.25, lightenColor(baseColor, 0.6));
-            unified.addColorStop(0.4, lightenColor(baseColor, 0.3));
+            unified.addColorStop(0.05, 'rgba(255,255,255,0.95)');
+            unified.addColorStop(0.1, 'rgba(255,255,255,0.85)');
+            // Smooth transition through color
+            unified.addColorStop(0.15, lightenColor(baseColor, 0.7));
+            unified.addColorStop(0.2, lightenColor(baseColor, 0.5));
+            unified.addColorStop(0.3, lightenColor(baseColor, 0.3));
+            unified.addColorStop(0.4, baseColor);
+            unified.addColorStop(0.5, baseColor);
             unified.addColorStop(0.6, baseColor);
-            unified.addColorStop(0.85, 'rgba(0,0,0,0.3)');
+            // Soft fade to transparent
+            unified.addColorStop(0.75, 'rgba(0,0,0,0.4)');
+            unified.addColorStop(0.88, 'rgba(0,0,0,0.1)');
             unified.addColorStop(1, 'rgba(0,0,0,0)');
           } else {
-            unified.addColorStop(0, lightenColor(baseColor, 0.7));
-            unified.addColorStop(0.3, lightenColor(baseColor, 0.4));
-            unified.addColorStop(0.5, baseColor);
-            unified.addColorStop(0.8, 'rgba(0,0,0,0.2)');
+            // Smaller bubbles - still bright center but less intense
+            unified.addColorStop(0, lightenColor(baseColor, 0.8));
+            unified.addColorStop(0.15, lightenColor(baseColor, 0.5));
+            unified.addColorStop(0.3, lightenColor(baseColor, 0.2));
+            unified.addColorStop(0.45, baseColor);
+            unified.addColorStop(0.6, baseColor);
+            unified.addColorStop(0.78, 'rgba(0,0,0,0.3)');
+            unified.addColorStop(0.92, 'rgba(0,0,0,0.05)');
             unified.addColorStop(1, 'rgba(0,0,0,0)');
           }
           
