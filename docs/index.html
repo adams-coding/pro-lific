@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v12</div>
+          <div class="pill" id="ver">viz v13</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v12';
+      if (verEl) verEl.textContent = 'viz v13';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -207,9 +207,9 @@
           'JSON': '#02569B',          // JSON Blue
           'XML': '#0060AC',           // XML Blue
           'YAML': '#CB171E',          // YAML Red
-          // Assets - cosmic colors
-          'Assets': '#E8E8E8',        // Pearl White
-          'Unknown': '#C5A3A3',       // Dusty Rose
+          // Assets - vibrant cosmic colors (NO GREY!)
+          'Assets': '#FF0090',        // Neon Magenta
+          'Unknown': '#FF6EC7',       // Hot Pink
         };
         
         const normalized = String(str).trim();
