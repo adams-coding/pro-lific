@@ -104,7 +104,7 @@
         <div class="controls">
           <button id="reload">Reload</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v7</div>
+          <div class="pill" id="ver">viz v8</div>
         </div>
       </div>
     </header>
@@ -127,7 +127,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v7';
+      if (verEl) verEl.textContent = 'viz v8';
 
       function clamp(v, lo, hi) {
         const n = Number(v);
@@ -306,11 +306,8 @@
           const pNode = getNode(projectId);
           if (!pNode) return;
 
-          // Orbit parameters: calculate radius to fit events without overlap
-          // Each event averages ~100px diameter, plus ~50px gap = 150px per event around the circle
-          const avgEventSpace = 150;
-          const circumference = projectEvents.length * avgEventSpace;
-          const eventOrbitRadius = Math.max(400, circumference / (2 * Math.PI));
+          // Orbit parameters: reasonable fixed radius that works visually
+          const eventOrbitRadius = 350;
 
           // Distribute THIS project's events evenly in a full 360° circle
           projectEvents.forEach((e, eventIdx) => {
@@ -348,13 +345,13 @@
               .sort((a,b) => Math.abs(num(b?.delta_bytes, 0)) - Math.abs(num(a?.delta_bytes, 0)))
               .slice(0, 4);
 
-            const satOrbit = 50; // Fixed satellite orbit radius
             top.forEach((l, k) => {
               const lang = String(l.language || 'Unknown');
                 const delta = num(l?.delta_bytes, 0);
               const rr = 6 + Math.sqrt(Math.abs(delta) / Math.max(1, maxAbs)) * 10;
               const sid = `s:${eventId}:${lang}:${k}`;
-              // Distribute satellites evenly around their parent event
+              // Satellite orbit distance proportional to its size (bigger activity = further orbit)
+              const satOrbit = 40 + (rr * 2); // Base distance + 2x the radius
               const a = (k / Math.max(top.length, 1)) * Math.PI * 2;
               const sn = addNode({
                 id: sid,
@@ -369,7 +366,7 @@
                 meta: { delta_bytes: delta, parent: eventId },
                 locked: false,
               });
-              // Satellite orbits: use satOrbit as rest (cos²+sin²=1, so actual distance = satOrbit)
+              // Satellite orbits: use calculated satOrbit distance
               addLink(ev.id, sn.id, satOrbit, 0.04);
             });
 
@@ -377,7 +374,8 @@
             const unknown = num(e?.unknown_delta_bytes, 0);
             if (unknown !== 0) {
               const rr = 7 + Math.sqrt(Math.abs(unknown) / Math.max(1, maxAbs)) * 10;
-              // Place asset satellite at a fixed offset from language satellites
+              // Orbit distance proportional to size
+              const satOrbit = 40 + (rr * 2);
               const a = (top.length / (top.length + 1)) * Math.PI * 2;
               const sid = `s:${eventId}:Assets`;
               const sn = addNode({
