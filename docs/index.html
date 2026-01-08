@@ -107,7 +107,7 @@
           <button id="zoom-reset" title="Reset zoom">100%</button>
           <button id="zoom-in" title="Zoom in">+</button>
           <div class="pill" id="count"></div>
-          <div class="pill" id="ver">viz v20</div>
+          <div class="pill" id="ver">viz v21</div>
         </div>
       </div>
     </header>
@@ -130,7 +130,7 @@
       const countEl = document.getElementById('count');
       const verEl = document.getElementById('ver');
       const METRIC = 'net_loc_estimate'; // fixed metric for bubble sizing (keep UI simple)
-      if (verEl) verEl.textContent = 'viz v20';
+      if (verEl) verEl.textContent = 'viz v21';
 
       // Zoom state
       let zoomLevel = 1.0; // 1.0 = 100%, can range from 0.1 to 3.0
@@ -806,51 +806,38 @@
 
           ctx.save();
           
-          // SIMPLE SMOOTH GLOW - Fewer stops for natural blending
+          // SINGLE SMOOTH GRADIENT - Like the reference galaxy image
           const baseColor = n.color || '#7cf2c5';
           const isImportant = n.type === 'project' || n.type === 'event';
           
-          // Wide soft glow - starts inside the bubble, extends far out
-          ctx.globalAlpha = isImportant ? 0.25 : 0.18;
-          const glow = ctx.createRadialGradient(px, py, rr * 0.3, px, py, rr * 2.5);
-          glow.addColorStop(0, baseColor);
-          glow.addColorStop(0.5, baseColor);
-          glow.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = glow;
-          ctx.beginPath();
-          ctx.arc(px, py, rr * 2.5, 0, Math.PI * 2);
-          ctx.fill();
+          // ONE unified gradient from bright center to transparent edge - NO layers!
+          const glowSize = isImportant ? rr * 3.0 : rr * 2.2;
+          ctx.globalAlpha = 1.0;
           
-          // Main bubble - soft edge
-          ctx.globalAlpha = 0.7;
-          const bubble = ctx.createRadialGradient(
-            px - rr * 0.25, py - rr * 0.25, 0,
-            px, py, rr * 1.1
+          const unified = ctx.createRadialGradient(
+            px - rr * 0.15, py - rr * 0.15, 0,  // Bright spot slightly offset
+            px, py, glowSize
           );
-          bubble.addColorStop(0, lightenColor(baseColor, 0.5));
-          bubble.addColorStop(0.6, baseColor);
-          bubble.addColorStop(1, 'rgba(0,0,0,0)');
           
-          ctx.fillStyle = bubble;
-          ctx.beginPath();
-          ctx.arc(px, py, rr * 1.1, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Bright center - only for important bubbles
+          // Smooth continuous gradient - white center through color to transparent
           if (isImportant && rr > 20) {
-            ctx.globalAlpha = 0.9;
-            const core = ctx.createRadialGradient(
-              px - rr * 0.2, py - rr * 0.2, 0,
-              px, py, rr * 0.4
-            );
-            core.addColorStop(0, 'rgba(255,255,255,0.9)');
-            core.addColorStop(0.7, lightenColor(baseColor, 0.6));
-            core.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = core;
-            ctx.beginPath();
-            ctx.arc(px, py, rr * 0.4, 0, Math.PI * 2);
-            ctx.fill();
+            unified.addColorStop(0, 'rgba(255,255,255,0.95)');
+            unified.addColorStop(0.08, lightenColor(baseColor, 0.6));
+            unified.addColorStop(0.25, lightenColor(baseColor, 0.3));
+            unified.addColorStop(0.45, baseColor);
+            unified.addColorStop(0.7, baseColor);
+            unified.addColorStop(1, 'rgba(0,0,0,0)');
+          } else {
+            unified.addColorStop(0, lightenColor(baseColor, 0.4));
+            unified.addColorStop(0.35, baseColor);
+            unified.addColorStop(0.65, baseColor);
+            unified.addColorStop(1, 'rgba(0,0,0,0)');
           }
+          
+          ctx.fillStyle = unified;
+          ctx.beginPath();
+          ctx.arc(px, py, glowSize, 0, Math.PI * 2);
+          ctx.fill();
           
           ctx.restore();
           drawn += 1;
