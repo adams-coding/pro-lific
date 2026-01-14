@@ -1632,5 +1632,45 @@
       "Project-46de3d41aa",
       "Project-8d00d036c0"
     ]
+  },
+  {
+    "churn_loc_estimate": 112,
+    "counts": {
+      "assets_added": 2,
+      "assets_modified": 4,
+      "assets_removed": 0,
+      "files_added": 2,
+      "files_modified": 9,
+      "files_removed": 0,
+      "folders_added": 1,
+      "folders_modified": 5,
+      "folders_removed": 0
+    },
+    "event_id": "2026-01-14T03:51:52Z",
+    "languages": [
+      {
+        "delta_bytes": 758,
+        "estimated_loc_delta": 15,
+        "language": "CSS"
+      },
+      {
+        "delta_bytes": 0,
+        "estimated_loc_delta": 0,
+        "language": "HTML"
+      },
+      {
+        "delta_bytes": 3691,
+        "estimated_loc_delta": 97,
+        "language": "TypeScript"
+      }
+    ],
+    "net_loc_estimate": 112,
+    "schema_version": 1,
+    "total_delta_bytes": 7358,
+    "unknown_delta_bytes": 2909,
+    "watch_folders": [
+      "Project-8998feee2d",
+      "Project-8d00d036c0"
+    ]
   }
 ]
