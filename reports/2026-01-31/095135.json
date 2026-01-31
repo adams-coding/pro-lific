@@ -1,0 +1,40 @@
+{
+  "churn_loc_estimate": 64,
+  "counts": {
+    "assets_added": 46,
+    "assets_modified": 9,
+    "assets_removed": 0,
+    "files_added": 46,
+    "files_modified": 15,
+    "files_removed": 0,
+    "folders_added": 4,
+    "folders_modified": 44,
+    "folders_removed": 0
+  },
+  "event_id": "2026-01-31T09:51:35Z",
+  "languages": [
+    {
+      "delta_bytes": 653,
+      "estimated_loc_delta": 13,
+      "language": "HTML"
+    },
+    {
+      "delta_bytes": 38,
+      "estimated_loc_delta": 1,
+      "language": "Python"
+    },
+    {
+      "delta_bytes": 1902,
+      "estimated_loc_delta": 50,
+      "language": "TypeScript"
+    }
+  ],
+  "net_loc_estimate": 64,
+  "schema_version": 1,
+  "total_delta_bytes": 116652,
+  "unknown_delta_bytes": 114059,
+  "watch_folders": [
+    "Project-8998feee2d",
+    "Project-8d00d036c0"
+  ]
+}
