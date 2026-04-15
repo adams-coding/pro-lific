@@ -24610,5 +24610,76 @@
     "watch_folders": [
       "Project-8d00d036c0"
     ]
+  },
+  {
+    "churn_loc_estimate": 836466,
+    "counts": {
+      "assets_added": 12635,
+      "assets_modified": 2,
+      "assets_removed": 0,
+      "files_added": 16654,
+      "files_modified": 4,
+      "files_removed": 0,
+      "folders_added": 3674,
+      "folders_modified": 4,
+      "folders_removed": 0
+    },
+    "event_id": "2026-04-15T19:48:12Z",
+    "languages": [
+      {
+        "delta_bytes": 6487699,
+        "estimated_loc_delta": 170729,
+        "language": "C"
+      },
+      {
+        "delta_bytes": 17088482,
+        "estimated_loc_delta": 406869,
+        "language": "C++"
+      },
+      {
+        "delta_bytes": 25474,
+        "estimated_loc_delta": 509,
+        "language": "CSS"
+      },
+      {
+        "delta_bytes": 74341,
+        "estimated_loc_delta": 1487,
+        "language": "HTML"
+      },
+      {
+        "delta_bytes": 3097291,
+        "estimated_loc_delta": 67332,
+        "language": "Java"
+      },
+      {
+        "delta_bytes": 6720486,
+        "estimated_loc_delta": 176855,
+        "language": "JavaScript"
+      },
+      {
+        "delta_bytes": 275516,
+        "estimated_loc_delta": 8103,
+        "language": "Python"
+      },
+      {
+        "delta_bytes": 135506,
+        "estimated_loc_delta": 4517,
+        "language": "Shell"
+      },
+      {
+        "delta_bytes": 2471,
+        "estimated_loc_delta": 65,
+        "language": "TypeScript"
+      }
+    ],
+    "net_loc_estimate": 836466,
+    "schema_version": 1,
+    "total_delta_bytes": 1311470893,
+    "unknown_delta_bytes": 1277563627,
+    "watch_folders": [
+      "Project-ae4c66ec36",
+      "Project-0ce4364732",
+      "Project-8d00d036c0"
+    ]
   }
 ]
