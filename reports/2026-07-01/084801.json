@@ -1,0 +1,50 @@
+{
+  "churn_loc_estimate": 97514,
+  "counts": {
+    "assets_added": 296,
+    "assets_modified": 10,
+    "assets_removed": 0,
+    "files_added": 1350,
+    "files_modified": 13,
+    "files_removed": 0,
+    "folders_added": 282,
+    "folders_modified": 9,
+    "folders_removed": 0
+  },
+  "event_id": "2026-07-01T08:48:01Z",
+  "languages": [
+    {
+      "delta_bytes": 6254,
+      "estimated_loc_delta": 165,
+      "language": "C"
+    },
+    {
+      "delta_bytes": 68,
+      "estimated_loc_delta": 1,
+      "language": "HTML"
+    },
+    {
+      "delta_bytes": 2281365,
+      "estimated_loc_delta": 60036,
+      "language": "JavaScript"
+    },
+    {
+      "delta_bytes": 3244,
+      "estimated_loc_delta": 108,
+      "language": "Shell"
+    },
+    {
+      "delta_bytes": 1413756,
+      "estimated_loc_delta": 37204,
+      "language": "TypeScript"
+    }
+  ],
+  "net_loc_estimate": 97514,
+  "schema_version": 1,
+  "total_delta_bytes": 5195778,
+  "unknown_delta_bytes": 1491091,
+  "watch_folders": [
+    "Project-f0be22fda1",
+    "Project-8d00d036c0"
+  ]
+}
