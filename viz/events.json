@@ -52560,5 +52560,55 @@
       "Project-fab59dae25",
       "Project-8d00d036c0"
     ]
+  },
+  {
+    "churn_loc_estimate": 26272,
+    "counts": {
+      "assets_added": 56,
+      "assets_modified": 30,
+      "assets_removed": 1,
+      "files_added": 59,
+      "files_modified": 173,
+      "files_removed": 1,
+      "folders_added": 0,
+      "folders_modified": 46,
+      "folders_removed": 0
+    },
+    "event_id": "2026-08-23T17:46:24Z",
+    "languages": [
+      {
+        "delta_bytes": 2289,
+        "estimated_loc_delta": 46,
+        "language": "CSS"
+      },
+      {
+        "delta_bytes": 0,
+        "estimated_loc_delta": 0,
+        "language": "HTML"
+      },
+      {
+        "delta_bytes": 981754,
+        "estimated_loc_delta": 25836,
+        "language": "JavaScript"
+      },
+      {
+        "delta_bytes": 0,
+        "estimated_loc_delta": 0,
+        "language": "SQL"
+      },
+      {
+        "delta_bytes": 14804,
+        "estimated_loc_delta": 390,
+        "language": "TypeScript"
+      }
+    ],
+    "net_loc_estimate": 26272,
+    "schema_version": 1,
+    "total_delta_bytes": 51476112,
+    "unknown_delta_bytes": 50477265,
+    "watch_folders": [
+      "Project-fab59dae25",
+      "Project-8d00d036c0"
+    ]
   }
 ]
