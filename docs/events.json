@@ -67512,5 +67512,67 @@
       "Project-ae4c66ec36",
       "Project-8d00d036c0"
     ]
+  },
+  {
+    "churn_loc_estimate": 23993,
+    "counts": {
+      "assets_added": 48,
+      "assets_modified": 328,
+      "assets_removed": 18,
+      "files_added": 207,
+      "files_modified": 605,
+      "files_removed": 34,
+      "folders_added": 13,
+      "folders_modified": 97,
+      "folders_removed": 1
+    },
+    "event_id": "2026-10-27T17:47:16Z",
+    "languages": [
+      {
+        "delta_bytes": 475,
+        "estimated_loc_delta": 10,
+        "language": "CSS"
+      },
+      {
+        "delta_bytes": 347870,
+        "estimated_loc_delta": 6957,
+        "language": "HTML"
+      },
+      {
+        "delta_bytes": 125269,
+        "estimated_loc_delta": 3297,
+        "language": "JavaScript"
+      },
+      {
+        "delta_bytes": 2267,
+        "estimated_loc_delta": 67,
+        "language": "Python"
+      },
+      {
+        "delta_bytes": 2527,
+        "estimated_loc_delta": 84,
+        "language": "Shell"
+      },
+      {
+        "delta_bytes": 44861,
+        "estimated_loc_delta": 1181,
+        "language": "SQL"
+      },
+      {
+        "delta_bytes": 471073,
+        "estimated_loc_delta": 12397,
+        "language": "TypeScript"
+      }
+    ],
+    "net_loc_estimate": 23993,
+    "schema_version": 1,
+    "total_delta_bytes": 29116528,
+    "unknown_delta_bytes": 28122186,
+    "watch_folders": [
+      "Project-dd01af3f91",
+      "Project-fab59dae25",
+      "Project-ae4c66ec36",
+      "Project-8d00d036c0"
+    ]
   }
 ]
